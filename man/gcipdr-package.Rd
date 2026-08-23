@@ -1,12 +1,12 @@
-\name{gcipdr-package}
-\alias{gcipdr-package}
-\alias{gcipdr}
+\name{gcipdrtest-package}
+\alias{gcipdrtest-package}
+\alias{gcipdrtest}
 \docType{package}
 \title{
-\packageTitle{gcipdr}
+\packageTitle{gcipdrtest}
 }
 \description{
-\packageDescription{gcipdr}
+\packageDescription{gcipdrtest}
 }
 
 \details{
