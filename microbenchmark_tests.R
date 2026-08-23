@@ -22,15 +22,21 @@ library(gcipdrtest)
 
 testdat <- mtcars[, 1:4]
 
-# Compare Base R vs dplyr methods
+# Compare if vectorization in stochastic integration has speed benefits 
+# (commit: 32e7fae2e3998d5366de646c8468ce9c244853b5)
+
 res <- microbenchmark(
-  gcipdr::Simulate.data.given.IPD(testdat, H=5, stochastic.integration = TRUE, SI_k = 50000, method = 3),
-  gcipdrtest::Simulate.data.given.IPD(testdat, H=5, stochastic.integration = TRUE, SI_k = 50000, method = 3),
-  times = 10L,
+  {
+    set.seed(608, "L'Ecuyer")
+    gcipdr::Simulate.data.given.IPD(testdat, H=5, stochastic.integration = TRUE, SI_k = 50000, method = 3)},
+  {
+    set.seed(608, "L'Ecuyer")
+    gcipdrtest::Simulate.data.given.IPD(testdat, H=5, stochastic.integration = TRUE, SI_k = 50000, method = 3)},
+  times = 30L,
   check = "equal"
 )
 
-
+print(res)
   
 boxplot(res, names = c("gcipdr", "gcipdrtest"))
 
