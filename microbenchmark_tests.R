@@ -26,7 +26,8 @@ testdat <- mtcars[, 1:4]
 res <- microbenchmark(
   gcipdr::Simulate.data.given.IPD(testdat, H=5, stochastic.integration = TRUE, SI_k = 50000, method = 3),
   gcipdrtest::Simulate.data.given.IPD(testdat, H=5, stochastic.integration = TRUE, SI_k = 50000, method = 3),
-  times = 10L
+  times = 10L,
+  check = "equal"
 )
 
 
