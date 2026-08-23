@@ -192,6 +192,33 @@ hLeftX <- function(z, rz)
     derivfactor
 }
 
+################################################################################
+################################################################################
+
+# ============================================================
+# OPTIMIZED: Vectorized versions of hLeftX
+# Mathematically identical to original — just accepts vectors
+# z1, z2 instead of single points, eliminating apply() overhead
+# ============================================================
+
+hLeftX_vec <- function(z1, z2, rz) {
+  g <- 2*pi*sqrt(1-rz^2)
+  gprime <- 2*pi*0.5*(-2*rz)*(1-rz^2)^(-0.5)
+  l <- (-1)*( z1^2 - 2*rz*z1*z2 + z2^2 )
+  h <- 2*(1-rz^2)
+  hsquare <- h^2
+  hprime <- -4*rz
+  lprime <- 2*z1*z2
+  numint <- lprime*h - hprime*l
+  numout <- ( numint/hsquare )*g - gprime
+  numout/g
+}
+
+
+# Modify mccovx1x2prime — replace this line:
+#   hx <- apply(z, 1, function(x) hLeftX(x, rz))
+# With:
+#   hx <- hLeftX_vec(z[,1], z[,2], rz)
 
 ## mccovx1x2 first derivative wrt rz
 
@@ -206,7 +233,8 @@ mccovx1x2prime <- function(rz, Gx1, Gx2,..., sdx=c(1,1),
                                         # X-marginals ...
     x1 <- Gx1(p1)
     x2 <- Gx2(p2)
-    hx <- apply(z, 1, function(x) hLeftX(x, rz) )
+    #hx <- apply(z, 1, function(x) hLeftX(x, rz) )
+    hx <- hLeftX_vec(z[,1], z[,2], rz)
     covprime <- sum(x1*x2*hx)/K    # integral
     const <- 1/prod(sdx)
            
