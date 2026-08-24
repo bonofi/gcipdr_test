@@ -28,8 +28,9 @@
 
 
 ## conversion of Rx into standard normal space corresponding matrix, Rz
-# FINISH: introduce stoch argument and integral option everywhere
-
+# ============================================================
+# MODIFIED: Pass stochastic integration flags to newtrap
+# ============================================================
 First.attempt.Rx_Rz.conversion <- function(Rx, marginals,
                                            means, sds, stoch=FALSE,
                                            lows=c(-5,-5), ups=c(5,5),
@@ -73,7 +74,9 @@ First.attempt.Rx_Rz.conversion <- function(Rx, marginals,
             K=K,
             NI_tol = NI_tol,
             NI_maxEval = NI_maxEval,
-            safecheck = check.rz.bounds2
+            safecheck = check.rz.bounds2,
+            stoch_integration = stoch,  # ← NEW: pass stochastic flag
+            stoch_K = K                 # ← NEW: pass K
         )[[1]]   # WRONG safecheck cannot take stoch arg here... FINISH  
 
         if(sign(out)!=sign(rxj))
@@ -154,15 +157,26 @@ convertRx <- function(Rx, marginals=NULL,
 # COMPUTATION OF DOUBLE EXPECTATION 
 
 ## montecarlo integration approach
-
+# ============================================================
+# MODIFIED: mccovx1x2 and mccovx1x2prime accept optional precomputed z
+# ============================================================
 
 mccovx1x2 <- function(rz, Gx1, Gx2,..., rx= 0,
                       meanx=c(0,0), sdx=c(1,1),
-                      pNorm=rep(TRUE,2), K=1000 )
+                      pNorm=rep(TRUE,2), K=1000, # if test passes K will be deprecated here
+                      precomputed_z = NULL)  # ← NEW parameter
 {
-
+  # If z is precomputed, use it; otherwise generate it
+  if (is.null(precomputed_z))
+  {
     Sigmaz <- diag(2); Sigmaz[1,2] <- Sigmaz[2,1] <- rz
-    z <- rmvnorm(K, sigma=Sigmaz)   # uniform sampling make little sense here ...
+    z <- rmvnorm(K, sigma=Sigmaz)
+  }
+  else
+  {
+    z <- precomputed_z
+    K <- nrow(z)
+  }
     p1 <- ifelse(rep(pNorm[1], K), pnorm(z[ ,1]), z[ ,1] )
     p2 <- ifelse(rep(pNorm[2], K), pnorm(z[ ,2]), z[ ,2] )
     x1 <- Gx1( p1 )
@@ -194,19 +208,28 @@ hLeftX <- function(z, rz)
 
 
 ## mccovx1x2 first derivative wrt rz
-
 mccovx1x2prime <- function(rz, Gx1, Gx2,..., sdx=c(1,1),  
-                           pNorm=rep(TRUE,2), K=1000)
+                           pNorm=rep(TRUE,2), K=1000, # if test passes K will be deprecated here 
+                           precomputed_z = NULL)  # ← NEW parameter
 {
+  # If z is precomputed, use it; otherwise generate it
+  if (is.null(precomputed_z))
+  {
     Sigmaz <- diag(2); Sigmaz[1,2] <- Sigmaz[2,1] <- rz
-    z <- rmvnorm(K,sigma=Sigmaz)
+    z <- rmvnorm(K, sigma=Sigmaz)
+  }
+  else
+  {
+    z <- precomputed_z
+    K <- nrow(z)
+  }
     p1 <- ifelse(rep(pNorm[1], K), pnorm(z[ ,1]), z[ ,1] )
     p2 <- ifelse(rep(pNorm[2], K), pnorm(z[ ,2]), z[ ,2] )
 
                                         # X-marginals ...
     x1 <- Gx1(p1)
     x2 <- Gx2(p2)
-    hx <- apply(z, 1, function(x) hLeftX(x, rz) )
+    hx <- apply(z, 1, function(x) hLeftX(x, rz) ) # will be replaced with hleftX_vec ...
     covprime <- sum(x1*x2*hx)/K    # integral
     const <- 1/prod(sdx)
            
@@ -351,21 +374,25 @@ covx1x2distprime <- function(rz, rx, Gx1, Gx2,...,
 
 
 ###  compute double expectation projected in normal space (INS), and norm between observed/projected correlation, numerically or stochastically .... ACTUALLY this is correlation no tdouble expectatoin ...
-
+# ============================================================
+# MODIFIED: Pass precomputed_z through to MC functions
+# ============================================================
 Compute.double.expectation.INS <- function( rz, rx, Gx1, Gx2,...,
                                            meanx=c(0,0), sdx=c(1,1),
                                            stoch = FALSE,
                                            lowlims= c(-5,-5),
                                            uplims=c(5,5),
                                            pNorm=rep(TRUE,2), K=NULL,
-                                           NI_tol = 1e-05, NI_maxEval = 20 )
+                                           NI_tol = 1e-05, NI_maxEval = 20,
+                                           precomputed_z = NULL)  # ← NEW parameter
 {
     if ( stoch )
         out <- mccovx1x2(rz, Gx1, Gx2,
                          rx = rx, meanx = meanx,
                          sdx = sdx, pNorm = pNorm,
-                         K = K
-                         )
+                         K = K,
+                         precomputed_z = precomputed_z)  # ← PASS THROUGH
+                         
     else
         out <- covx1x2dist(rz, rx,
                            Gx1, Gx2,
@@ -388,7 +415,8 @@ Compute.double.expectation.prime.INS <- function(rz, rx,
                                                  lowlims= c(-5,-5),
                                                  uplims=c(5,5),
                                                  pNorm=rep(TRUE,2), K=NULL,
-                                                 NI_tol = 1e-05, NI_maxEval = 20 )
+                                                 NI_tol = 1e-05, NI_maxEval = 20,
+                                                 precomputed_z = NULL)  # ← NEW parameter
 {
     if ( stoch )
         out <- mccovx1x2prime(rz,
@@ -396,8 +424,8 @@ Compute.double.expectation.prime.INS <- function(rz, rx,
                               rx = rx,
                               sdx = sdx,
                               pNorm = pNorm,
-                              K = K
-                              )
+                              K = K,
+                              precomputed_z = precomputed_z)  # ← PASS THROUGH
     else
         out <- covx1x2distprime(rz, rx,
                                 Gx1, Gx2,

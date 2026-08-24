@@ -23,19 +23,34 @@
 
 # start is scalar
 # safeguard value against f/fprime explosion, in case fprime --> zero.
-
+# ============================================================
+# MODIFIED: newtrap.one with stochastic integration awareness
+# Generates z once per iteration, reuses for both fdist/fprime
+# ============================================================
 
 newtrap.one <- function(fdist, fprime, start, ..., tol=0.01,
-                        maxit=50, safecheck = NULL)
+                        maxit=50, safecheck = NULL,
+                        stoch_integration = FALSE,  # ← NEW: flag for stochastic mode
+                        stoch_K = NULL)             # ← NEW: K for rmvnorm
 { # safecheck shall output an attribute break.loop and modified (boolean)
     adjusted <- FALSE
     i <- 0 # to exit main loop
     j <- 0 # to exit safecheck loop
     x <- start
+    # Initial evaluation (no z reuse on first call)
     out <- fdist(x, ...) # must be scalar
     while(  abs( out ) > tol  )
     {  
-        den <- fprime(x, ...)  #  must be scalar
+        # ← NEW: Generate z ONCE per iteration if stochastic
+        z_current <- NULL
+        if (stoch_integration)
+        {
+            Sigmaz <- diag(2)
+            Sigmaz[1,2] <- Sigmaz[2,1] <- x  # current rz
+            z_current <- rmvnorm(stoch_K, sigma=Sigmaz)
+        }
+        # Evaluate derivative (reuse z_current)
+        den <- fprime(x, ..., precomputed_z = z_current) #  must be scalar
 
 ############# safeguarding step : try to avoid bottlenecks ####################
         if ( abs( out/den ) >= 1e5 )
@@ -70,7 +85,9 @@ newtrap.one <- function(fdist, fprime, start, ..., tol=0.01,
             }
         }
 #############################################
-        out <-  fdist(x, ...)
+        # Evaluate objective at NEW x (reuse SAME z_current — still valid for this iteration)
+        out <- fdist(x, ..., precomputed_z = z_current)
+
         i <- i + 1
         if (i > maxit)
         {
@@ -133,8 +150,11 @@ newtrap.multi <- function( fdist, fprime, start, ..., tol=0.01,
 
                                         
 #
-
-newtrap <- function(fdist, fprime, start, ..., tol=0.01, maxit=50)
+# ============================================================
+# MODIFIED: newtrap wrapper passes stochastic parameters
+# ============================================================
+newtrap <- function(fdist, fprime, start, ..., tol=0.01, maxit=50,
+                    stoch_integration = FALSE, stoch_K = NULL)  # ← NEW parameters
 {
     if (length(start) > 1 )
         out <- newtrap.multi(fdist,
@@ -144,6 +164,8 @@ newtrap <- function(fdist, fprime, start, ..., tol=0.01, maxit=50)
                              maxit=maxit
                              ) # TODO(me) : must also safeguard against singular matrixes
     else
-        out <- newtrap.one(fdist, fprime, start, ..., tol=tol, maxit=maxit)
+        out <- newtrap.one(fdist, fprime, start, ..., tol=tol, maxit=maxit,
+                           stoch_integration = stoch_integration,  # ← PASS THROUGH
+                           stoch_K = stoch_K)                      # ← PASS THROUGH
     return(out)
 }
