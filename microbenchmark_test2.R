@@ -23,8 +23,8 @@ library(gcipdrtest)
 
 testdat <- mtcars[, 1:4]
 
-# Compare if vectorization in stochastic integration has speed benefits 
-# (commit: 32e7fae2e3998d5366de646c8468ce9c244853b5)
+# Compare if unification of rmvnorm generation in stochastic integration speeds up routine (expected x2) 
+# (commit: 1c26551488b77a6b5f6e6facc89bd07fb59253df)
 
 res <- microbenchmark(
   {
