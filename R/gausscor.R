@@ -59,23 +59,72 @@ First.attempt.Rx_Rz.conversion <- function(Rx, marginals,
         sxj <- c(sds[row], sds[col] )
         pnrm <- pNorm[c(row,col)]
 
-        out <- newtrap(
-            Compute.double.expectation.INS,
-            Compute.double.expectation.prime.INS,
-            rxj, Gx1= g1, Gx2= g2,
-            rx= rxj,
-            meanx=mxj,
-            sdx=sxj,
-            stoch = stoch,
-            lowlims=lows,
-            uplims=ups,
-            pNorm=pnrm,
-            K=K,
-            NI_tol = NI_tol,
-            NI_maxEval = NI_maxEval,
-            safecheck = check.rz.bounds2
-        )[[1]]   # WRONG safecheck cannot take stoch arg here... FINISH  
-
+        # ── Closures capturing all arguments for this pair ────────────────
+        # Give newtrap_one_cpp a clean single-argument (rz) interface
+        
+        fdist_closure <- function(rz)
+          Compute.double.expectation.INS(
+            rz,
+            rx       = rxj,
+            Gx1      = g1,
+            Gx2      = g2,
+            meanx    = mxj,
+            sdx      = sxj,
+            stoch    = stoch,
+            lowlims  = lows,
+            uplims   = ups,
+            pNorm    = pnrm,
+            K        = K,
+            NI_tol   = NI_tol,
+            NI_maxEval = NI_maxEval
+          )
+        
+        fprime_closure <- function(rz)
+          Compute.double.expectation.prime.INS(
+            rz,
+            rx       = rxj,
+            Gx1      = g1,
+            Gx2      = g2,
+            sdx      = sxj,
+            stoch    = stoch,
+            lowlims  = lows,
+            uplims   = ups,
+            pNorm    = pnrm,
+            K        = K,
+            NI_tol   = NI_tol,
+            NI_maxEval = NI_maxEval
+          )
+        
+        safecheck_closure <- function(rz)
+          check.rz.bounds2(
+            rz,
+            rx       = rxj,
+            Gx1      = g1,
+            Gx2      = g2,
+            meanx    = mxj,
+            sdx      = sxj,
+            stoch    = stoch,
+            lowlims  = lows,
+            uplims   = ups,
+            pNorm    = pnrm,
+            K        = K,
+            NI_tol   = NI_tol,
+            NI_maxEval = NI_maxEval
+          )
+        
+        # ── Call Rcpp Newton-Raphson (compiled loop, R callbacks) ─────────
+        result <- newtrap_one_cpp(
+          fdist         = fdist_closure,
+          fprime        = fprime_closure,
+          safecheck_arg = safecheck_closure,   # pass NULL here if you want to disable safecheck
+          start         = rxj,
+          tol           = 0.01,
+          maxit         = 50
+        )
+        
+        out <- result$value[1]  # extract scalar
+        
+        
         if(sign(out)!=sign(rxj))
             warning("sign of copula pair correlation different from entry value !!!", call.=F)
         out
