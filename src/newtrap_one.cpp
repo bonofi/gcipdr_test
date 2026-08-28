@@ -13,14 +13,17 @@ Rcpp::List newtrap_one_cpp(Rcpp::Function fdist_and_fprime,
   
   bool has_safecheck = !safecheck_arg.isNull();
   
-  // Initial evaluation — get both objective and derivative
+  // IMPORTANT CHANGE !!!! Initial evaluation — get both objective and derivative: RNG is called 
+  // simultaneously instead of sequentially (previous version) 
+  // which will break reproducibility (results should be statistically equivalent) 
   SEXP both_sexp = fdist_and_fprime(x);
   Rcpp::List both = Rcpp::as<Rcpp::List>(both_sexp);
   double out = Rcpp::as<double>(both["objective"]);
   
   while (out > tol || out < -tol)
   {
-    // Use derivative from current evaluation
+    // Use derivative from current evaluation: RNG allocation changed 
+    // as this call is not sequential
     double den = Rcpp::as<double>(both["derivative"]);
     
     // Safeguard: escape bottleneck if step is degenerate
@@ -68,7 +71,9 @@ Rcpp::List newtrap_one_cpp(Rcpp::Function fdist_and_fprime,
       }
     }
     
-    // Evaluate at new x — gives us both objective and derivative for next iteration
+    // Evaluate at new x — gives us both objective and derivative 
+    // for next iteration: RNG allocation changed because derivative will
+    // be evaluated simultaneously here instead of sequentially.
     both_sexp = fdist_and_fprime(x);
     both = Rcpp::as<Rcpp::List>(both_sexp);
     out = Rcpp::as<double>(both["objective"]);
