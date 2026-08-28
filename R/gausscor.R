@@ -122,15 +122,15 @@ First.attempt.Rx_Rz.conversion <- function(Rx, marginals,
           maxit         = 50
         )
         
-        out <- result$value[1]  # extract scalar
-        
+        out <- result$value
         
         if(sign(out)!=sign(rxj))
             warning("sign of copula pair correlation different from entry value !!!", call.=F)
         out
     }
     )
-    res <- make.square.matrix(unlist( Rut ), p )
+    
+   res <- make.square.matrix(unlist( Rut ), p )
     res.bool <- make.square.matrix( unlist(
         lapply(Rut, function(x)
         attr(x, "adjusted", T)

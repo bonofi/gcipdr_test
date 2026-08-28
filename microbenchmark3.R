@@ -21,11 +21,11 @@ library(gcipdrtest)
 
 #### START TESTS
 
-testdat <- mtcars[, 1:4]
+testdat <- mtcars[, 1:5]
 
-# Compare if unification of rmvnorm generation in stochastic integration 
+# Compare if Rccp conversion 
 # speeds up routine (expected x2) 
-# (commit: 1c26551488b77a6b5f6e6facc89bd07fb59253df)
+# (commit: c69fa3257b6076db80cfc33868b14938aa395715)
 
 custom_check <- function(res){
   
@@ -40,7 +40,7 @@ custom_check <- function(res){
 }
 
 
-res <- microbenchmark(
+res <- microbenchmark::microbenchmark(
   {
     set.seed(608, "L'Ecuyer")
     gcipdr::Simulate.data.given.IPD(testdat, H=5, stochastic.integration = TRUE, 
@@ -51,8 +51,8 @@ res <- microbenchmark(
     gcipdrtest::Simulate.data.given.IPD(testdat, H=5, stochastic.integration = TRUE, 
                                         SI_k = 50000, method = 3, checkdata = TRUE,
                                         tabulate.similar.data = TRUE)},
-  times = 30L
-  #check = custom_check
+  times = 30L,
+  check = "equal"
 )
 
 print(res)
