@@ -1,6 +1,6 @@
-#include <Rcpp.h>
+#include <RcppArmadillo.h>
+// [[Rcpp::depends(RcppArmadillo)]]
 
-// [[Rcpp::export]]
 Rcpp::List newtrap_one_cpp(Rcpp::Function fdist, Rcpp::Function fprime,
                            Rcpp::Nullable<Rcpp::Function> safecheck_arg,
                            double start, double tol = 0.01, int maxit = 50)
