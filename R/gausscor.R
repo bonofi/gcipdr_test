@@ -401,35 +401,28 @@ covx1x2distprime <- function(rz, rx, Gx1, Gx2,...,
 
 ###  compute double expectation projected in normal space (INS), and norm between observed/projected correlation, numerically or stochastically .... ACTUALLY this is correlation no tdouble expectatoin ...
 
-Compute.double.expectation.INS <- function( rz, rx, Gx1, Gx2,...,
+Compute.double.expectation.INS <- function(rz, rx, Gx1, Gx2,...,
                                            meanx=c(0,0), sdx=c(1,1),
                                            stoch = FALSE,
                                            lowlims= c(-5,-5),
                                            uplims=c(5,5),
                                            pNorm=rep(TRUE,2), K=NULL,
-                                           NI_tol = 1e-05, NI_maxEval = 20 )
+                                           NI_tol = 1e-05, NI_maxEval = 20)
 {
-    if ( stoch )
-        out <- mccovx1x2(rz, Gx1, Gx2,
+  if (stoch)
+    out <- mccovx1x2_cpp(rz, Gx1, Gx2,
                          rx = rx, meanx = meanx,
-                         sdx = sdx, pNorm = pNorm,
-                         K = K
-                         )
-    else
-        out <- covx1x2dist(rz, rx,
-                           Gx1, Gx2,
-                           meanx = meanx,
-                           sdx = sdx,
-                           lowlims = lowlims,
-                           uplims = uplims,
-                           pNorm = pNorm,
-                           NI_tol = NI_tol,
-                           NI_maxEval = NI_maxEval
-                           )
-    return(out)
+                         sdx = sdx, 
+                         pNorm_1 = pNorm[1], pNorm_2 = pNorm[2],
+                         K = K)
+  else
+    out <- covx1x2dist(rz, rx, Gx1, Gx2,
+                       meanx = meanx, sdx = sdx,
+                       lowlims = lowlims, uplims = uplims,
+                       pNorm = pNorm, NI_tol = NI_tol,
+                       NI_maxEval = NI_maxEval)
+  return(out)
 }
-
-#
 
 Compute.double.expectation.prime.INS <- function(rz, rx,
                                                  Gx1, Gx2,...,
@@ -437,27 +430,19 @@ Compute.double.expectation.prime.INS <- function(rz, rx,
                                                  lowlims= c(-5,-5),
                                                  uplims=c(5,5),
                                                  pNorm=rep(TRUE,2), K=NULL,
-                                                 NI_tol = 1e-05, NI_maxEval = 20 )
+                                                 NI_tol = 1e-05, NI_maxEval = 20)
 {
-    if ( stoch )
-        out <- mccovx1x2prime(rz,
-                              Gx1, Gx2,
-                              rx = rx,
+  if (stoch)
+    out <- mccovx1x2prime_cpp(rz, Gx1, Gx2,
                               sdx = sdx,
-                              pNorm = pNorm,
-                              K = K
-                              )
-    else
-        out <- covx1x2distprime(rz, rx,
-                                Gx1, Gx2,
-                                sdx = sdx,
-                                lowlims = lowlims,
-                                uplims = uplims,
-                                pNorm = pNorm,
-                                NI_tol = NI_tol,
-                                NI_maxEval = NI_maxEval
-                                )
-    return(out)
+                              pNorm_1 = pNorm[1], pNorm_2 = pNorm[2],
+                              K = K)
+  else
+    out <- covx1x2distprime(rz, rx, Gx1, Gx2,
+                            sdx = sdx, lowlims = lowlims,
+                            uplims = uplims, pNorm = pNorm,
+                            NI_tol = NI_tol, NI_maxEval = NI_maxEval)
+  return(out)
 }
 
 
