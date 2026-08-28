@@ -2,7 +2,7 @@
 // [[Rcpp::depends(RcppArmadillo)]]
 
 // [[Rcpp::export]]
-Rcpp::List newtrap_one_cpp(Rcpp::Function fdist, Rcpp::Function fprime,
+Rcpp::List newtrap_one_cpp(Rcpp::Function fdist_and_fprime,
                            Rcpp::Nullable<Rcpp::Function> safecheck_arg,
                            double start, double tol = 0.01, int maxit = 50)
 {
@@ -13,14 +13,15 @@ Rcpp::List newtrap_one_cpp(Rcpp::Function fdist, Rcpp::Function fprime,
   
   bool has_safecheck = !safecheck_arg.isNull();
   
-  // Initial evaluation
-  SEXP out_sexp = fdist(x);
-  double out = Rcpp::as<double>(out_sexp);
+  // Initial evaluation — get both objective and derivative
+  SEXP both_sexp = fdist_and_fprime(x);
+  Rcpp::List both = Rcpp::as<Rcpp::List>(both_sexp);
+  double out = Rcpp::as<double>(both["objective"]);
   
   while (out > tol || out < -tol)
   {
-    SEXP den_sexp = fprime(x);
-    double den = Rcpp::as<double>(den_sexp);
+    // Use derivative from current evaluation
+    double den = Rcpp::as<double>(both["derivative"]);
     
     // Safeguard: escape bottleneck if step is degenerate
     double ratio = out / den;
@@ -33,8 +34,9 @@ Rcpp::List newtrap_one_cpp(Rcpp::Function fdist, Rcpp::Function fprime,
         Rcpp::warning("Search could not escape bottleneck: procedure has failed");
         break;
       }
-      out_sexp = fdist(x);
-      out = Rcpp::as<double>(out_sexp);
+      both_sexp = fdist_and_fprime(x);
+      both = Rcpp::as<Rcpp::List>(both_sexp);
+      out = Rcpp::as<double>(both["objective"]);
       continue;
     }
     
@@ -48,7 +50,6 @@ Rcpp::List newtrap_one_cpp(Rcpp::Function fdist, Rcpp::Function fprime,
       SEXP x_sexp = safecheck(x);
       x = Rcpp::as<double>(x_sexp);
       
-      // Check if safecheck modified x
       SEXP modified_sexp = Rf_getAttrib(x_sexp, Rf_install("modified"));
       bool modified = Rcpp::as<bool>(modified_sexp);
       
@@ -56,7 +57,6 @@ Rcpp::List newtrap_one_cpp(Rcpp::Function fdist, Rcpp::Function fprime,
       {
         j = j + 1;
         
-        // Check if safecheck signals loop break
         SEXP break_loop_sexp = Rf_getAttrib(x_sexp, Rf_install("break.loop"));
         bool break_loop = Rcpp::as<bool>(break_loop_sexp);
         
@@ -68,9 +68,11 @@ Rcpp::List newtrap_one_cpp(Rcpp::Function fdist, Rcpp::Function fprime,
       }
     }
     
-    // Re-evaluate objective at new x
-    out_sexp = fdist(x);
-    out = Rcpp::as<double>(out_sexp);
+    // Evaluate at new x — gives us both objective and derivative for next iteration
+    both_sexp = fdist_and_fprime(x);
+    both = Rcpp::as<Rcpp::List>(both_sexp);
+    out = Rcpp::as<double>(both["objective"]);
+    
     i = i + 1;
     
     if (i > maxit)

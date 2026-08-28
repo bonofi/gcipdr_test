@@ -95,6 +95,15 @@ First.attempt.Rx_Rz.conversion <- function(Rx, marginals,
             NI_maxEval = NI_maxEval
           )
         
+        # ── NEW: Combined wrapper — returns both objective and derivative in one call ──
+        fdist_and_fprime_wrapper <- function(rz)
+        {
+          list(
+            objective  = fdist_closure(rz),
+            derivative = fprime_closure(rz)
+          )
+        }
+        
         safecheck_closure <- function(rz)
           check.rz.bounds2(
             rz,
@@ -112,14 +121,13 @@ First.attempt.Rx_Rz.conversion <- function(Rx, marginals,
             NI_maxEval = NI_maxEval
           )
         
-        # ── Call Rcpp Newton-Raphson (compiled loop, R callbacks) ─────────
+        # ── Call Rcpp Newton-Raphson ─────────
         result <- newtrap_one_cpp(
-          fdist         = fdist_closure,
-          fprime        = fprime_closure,
-          safecheck_arg = safecheck_closure,   # pass NULL here if you want to disable safecheck
-          start         = rxj,
-          tol           = 0.01,
-          maxit         = 50
+          fdist_and_fprime = fdist_and_fprime_wrapper,  # ← NEW: combined function
+          safecheck_arg    = safecheck_closure,
+          start            = rxj,
+          tol              = 0.01,
+          maxit            = 50
         )
         
         out <- result$value
