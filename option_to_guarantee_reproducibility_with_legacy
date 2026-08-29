@@ -1,0 +1,90 @@
+# this is an option to guarantee match with legacy package when using future based on given number of cores 
+
+First.attempt.Rx_Rz.conversion <- function(Rx, marginals,
+                                           means, sds, stoch=FALSE,
+                                           lows=c(-5,-5), ups=c(5,5),
+                                           pNorm=NULL, K=1000, NI_tol = 1e-05,
+                                           NI_maxEval = 20)
+{
+    p <- length(marginals)
+
+    if(is.null(pNorm))
+        pNorm <- rep(TRUE, p)
+
+    combos <- combn(p, 2)
+    J <- p*(p-1)/2
+
+    pair_fun <- function(j)
+    {
+        row <- combos[1, j]
+        col <- combos[2, j]
+        rxj <- Rx[row, col]
+
+        g1 <- marginals[[row]]
+        g2 <- marginals[[col]]
+
+        mxj <- c(means[row], means[col])
+        sxj <- c(sds[row], sds[col])
+        pnrm <- pNorm[c(row, col)]
+
+        fdist_closure <- function(rz)
+            Compute.double.expectation.INS(
+                rz, rx = rxj, Gx1 = g1, Gx2 = g2,
+                meanx = mxj, sdx = sxj, stoch = stoch,
+                lowlims = lows, uplims = ups, pNorm = pnrm,
+                K = K, NI_tol = NI_tol, NI_maxEval = NI_maxEval
+            )
+
+        fprime_closure <- function(rz)
+            Compute.double.expectation.prime.INS(
+                rz, rx = rxj, Gx1 = g1, Gx2 = g2,
+                sdx = sxj, stoch = stoch,
+                lowlims = lows, uplims = ups, pNorm = pnrm,
+                K = K, NI_tol = NI_tol, NI_maxEval = NI_maxEval
+            )
+
+        safecheck_closure <- function(rz)
+            check.rz.bounds2(
+                rz, rx = rxj, Gx1 = g1, Gx2 = g2,
+                meanx = mxj, sdx = sxj, stoch = stoch,
+                lowlims = lows, uplims = ups, pNorm = pnrm,
+                K = K, NI_tol = NI_tol, NI_maxEval = NI_maxEval
+            )
+
+        result <- newtrap_one_cpp(
+            fdist         = fdist_closure,
+            fprime        = fprime_closure,
+            safecheck_arg = safecheck_closure,
+            start         = rxj,
+            tol           = 0.01,
+            maxit         = 50
+        )
+
+        out <- result$value
+
+        if (sign(out) != sign(rxj))
+            warning("sign of copula pair correlation different from entry value !!!",
+                    call. = FALSE)
+
+        attributes(out)$adjusted <- attr(result$value, "adjusted")
+
+        out
+    }
+
+    # ── Sequential vs parallel dispatch ─────────────────────────────
+    # Sequential: plain lapply, byte-for-byte identical to original algorithm
+    # Parallel: future_lapply with seed management for cross-worker reproducibility
+    Rut <- if (future::nbrOfWorkers() == 1)
+        lapply(1:J, pair_fun)
+    else
+        future.apply::future_lapply(1:J, pair_fun, future.seed = TRUE)
+
+    res <- make.square.matrix(unlist(Rut), p)
+    res.bool <- make.square.matrix(
+        unlist(lapply(Rut, function(x) attr(x, "adjusted", T))),
+        p,
+        diag.val = T
+    )
+
+    return(list("matrix" = res, "flag" = res.bool))
+}
