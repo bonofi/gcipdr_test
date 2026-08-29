@@ -46,7 +46,7 @@ First.attempt.Rx_Rz.conversion <- function(Rx, marginals,
 
     J <- p*(p-1)/2 # number of separate root problems, equals dim(combos)[2]
     
-    Rut <- lapply(1:J, function(j)
+    Rut <- future.apply::future_lapply(1:J, function(j)
     {
         row <- combos[1, j]
         col <- combos[2, j]
@@ -79,8 +79,9 @@ First.attempt.Rx_Rz.conversion <- function(Rx, marginals,
         if(sign(out)!=sign(rxj))
             warning("sign of copula pair correlation different from entry value !!!", call.=F)
         out
-    }
-    )
+    }, 
+    future.seed = TRUE)  # ← key: reproducible RNG across workers
+    
     res <- make.square.matrix(unlist( Rut ), p )
     res.bool <- make.square.matrix( unlist(
         lapply(Rut, function(x)
