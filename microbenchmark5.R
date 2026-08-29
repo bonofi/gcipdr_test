@@ -125,20 +125,20 @@ library(gcipdrtest)
 
 ################### TEST EQUIVALNCE OF C++ function with R for rmvnorm
 
-K   <- 10      # small K for easy visual inspection
-rz  <- 0.5
+K   <- 100      # small K for easy visual inspection
+rz  <- 0.2
 Sigmaz <- matrix(c(1, rz, rz, 1), 2, 2)
 
 # USING CHOLESKY DECOMPOSITION
 # Test 1: rmvnorm (original R)
 set.seed(42)
 z_r <- mvtnorm::rmvnorm(K, sigma = Sigmaz, method = "chol")
-print(round(z_r, 6))
+print(round(z_r, 6) |> head())
 
 # Test 2: our C++ version
 set.seed(42)
 z_cpp <- gcipdrtest::test_rmvnorm_cpp_cholesky(K, rz)
-print(round(z_cpp, 6))
+print(round(z_cpp, 6) |> head())
 
 # Test 3: are they identical?
 cat("Max absolute difference:", max(abs(z_r - z_cpp)), "\n")
@@ -148,12 +148,12 @@ cat("Max absolute difference:", max(abs(z_r - z_cpp)), "\n")
 # Test 1: rmvnorm (original R)
 set.seed(42)
 z_r_eigen <- mvtnorm::rmvnorm(K, sigma = Sigmaz)
-print(round(z_r_eigen, 6))
+print(round(z_r_eigen, 6) |> head())
 
 # Test 2: our C++ version
 set.seed(42)
 z_cpp_eigen <- gcipdrtest::test_rmvnorm_cpp_eigen(K, rz)
-print(round(z_cpp_eigen, 6))
+print(round(z_cpp_eigen, 6) |> head())
 
 # Test 3: are they identical?
 cat("Max absolute difference:", max(abs(z_r_eigen - z_cpp_eigen)), "\n")
