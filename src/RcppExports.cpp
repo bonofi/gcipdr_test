@@ -11,6 +11,66 @@ Rcpp::Rostream<true>&  Rcpp::Rcout = Rcpp::Rcpp_cout_get();
 Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
 #endif
 
+// mccovx1x2_cpp
+double mccovx1x2_cpp(double rz, Rcpp::Function Gx1, Rcpp::Function Gx2, double rx, arma::vec meanx, arma::vec sdx, bool pNorm_1, bool pNorm_2, int K);
+RcppExport SEXP _gcipdrtest_mccovx1x2_cpp(SEXP rzSEXP, SEXP Gx1SEXP, SEXP Gx2SEXP, SEXP rxSEXP, SEXP meanxSEXP, SEXP sdxSEXP, SEXP pNorm_1SEXP, SEXP pNorm_2SEXP, SEXP KSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< double >::type rz(rzSEXP);
+    Rcpp::traits::input_parameter< Rcpp::Function >::type Gx1(Gx1SEXP);
+    Rcpp::traits::input_parameter< Rcpp::Function >::type Gx2(Gx2SEXP);
+    Rcpp::traits::input_parameter< double >::type rx(rxSEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type meanx(meanxSEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type sdx(sdxSEXP);
+    Rcpp::traits::input_parameter< bool >::type pNorm_1(pNorm_1SEXP);
+    Rcpp::traits::input_parameter< bool >::type pNorm_2(pNorm_2SEXP);
+    Rcpp::traits::input_parameter< int >::type K(KSEXP);
+    rcpp_result_gen = Rcpp::wrap(mccovx1x2_cpp(rz, Gx1, Gx2, rx, meanx, sdx, pNorm_1, pNorm_2, K));
+    return rcpp_result_gen;
+END_RCPP
+}
+// mccovx1x2prime_cpp
+double mccovx1x2prime_cpp(double rz, Rcpp::Function Gx1, Rcpp::Function Gx2, arma::vec sdx, bool pNorm_1, bool pNorm_2, int K);
+RcppExport SEXP _gcipdrtest_mccovx1x2prime_cpp(SEXP rzSEXP, SEXP Gx1SEXP, SEXP Gx2SEXP, SEXP sdxSEXP, SEXP pNorm_1SEXP, SEXP pNorm_2SEXP, SEXP KSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< double >::type rz(rzSEXP);
+    Rcpp::traits::input_parameter< Rcpp::Function >::type Gx1(Gx1SEXP);
+    Rcpp::traits::input_parameter< Rcpp::Function >::type Gx2(Gx2SEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type sdx(sdxSEXP);
+    Rcpp::traits::input_parameter< bool >::type pNorm_1(pNorm_1SEXP);
+    Rcpp::traits::input_parameter< bool >::type pNorm_2(pNorm_2SEXP);
+    Rcpp::traits::input_parameter< int >::type K(KSEXP);
+    rcpp_result_gen = Rcpp::wrap(mccovx1x2prime_cpp(rz, Gx1, Gx2, sdx, pNorm_1, pNorm_2, K));
+    return rcpp_result_gen;
+END_RCPP
+}
+// test_rmvnorm_cpp_cholesky
+arma::mat test_rmvnorm_cpp_cholesky(int K, double rz);
+RcppExport SEXP _gcipdrtest_test_rmvnorm_cpp_cholesky(SEXP KSEXP, SEXP rzSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< int >::type K(KSEXP);
+    Rcpp::traits::input_parameter< double >::type rz(rzSEXP);
+    rcpp_result_gen = Rcpp::wrap(test_rmvnorm_cpp_cholesky(K, rz));
+    return rcpp_result_gen;
+END_RCPP
+}
+// test_rmvnorm_cpp_eigen
+arma::mat test_rmvnorm_cpp_eigen(int K, double rz);
+RcppExport SEXP _gcipdrtest_test_rmvnorm_cpp_eigen(SEXP KSEXP, SEXP rzSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< int >::type K(KSEXP);
+    Rcpp::traits::input_parameter< double >::type rz(rzSEXP);
+    rcpp_result_gen = Rcpp::wrap(test_rmvnorm_cpp_eigen(K, rz));
+    return rcpp_result_gen;
+END_RCPP
+}
 // newtrap_one_cpp
 Rcpp::List newtrap_one_cpp(Rcpp::Function fdist, Rcpp::Function fprime, Rcpp::Nullable<Rcpp::Function> safecheck_arg, double start, double tol, int maxit);
 RcppExport SEXP _gcipdrtest_newtrap_one_cpp(SEXP fdistSEXP, SEXP fprimeSEXP, SEXP safecheck_argSEXP, SEXP startSEXP, SEXP tolSEXP, SEXP maxitSEXP) {
@@ -43,6 +103,10 @@ END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
+    {"_gcipdrtest_mccovx1x2_cpp", (DL_FUNC) &_gcipdrtest_mccovx1x2_cpp, 9},
+    {"_gcipdrtest_mccovx1x2prime_cpp", (DL_FUNC) &_gcipdrtest_mccovx1x2prime_cpp, 7},
+    {"_gcipdrtest_test_rmvnorm_cpp_cholesky", (DL_FUNC) &_gcipdrtest_test_rmvnorm_cpp_cholesky, 2},
+    {"_gcipdrtest_test_rmvnorm_cpp_eigen", (DL_FUNC) &_gcipdrtest_test_rmvnorm_cpp_eigen, 2},
     {"_gcipdrtest_newtrap_one_cpp", (DL_FUNC) &_gcipdrtest_newtrap_one_cpp, 6},
     {"_gcipdrtest_findzerocorr", (DL_FUNC) &_gcipdrtest_findzerocorr, 4},
     {NULL, NULL, 0}
