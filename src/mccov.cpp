@@ -1,33 +1,66 @@
 #include <RcppArmadillo.h>
 // [[Rcpp::depends(RcppArmadillo)]]
 
+#include <RcppArmadillo.h>
+// [[Rcpp::depends(RcppArmadillo)]]
+
+// Internal helper: replicates rmvnorm(K, sigma=Sigmaz, method="eigen") exactly
+// Uses R's RNG stream — respects set.seed()
+void rmvnorm_eigen_cpp(int K, double rz, arma::vec& z1, arma::vec& z2)
+{
+  // Build Sigma = [[1, rz], [rz, 1]]
+  arma::mat sigma(2, 2);
+  sigma(0,0) = 1.0; sigma(0,1) = rz;
+  sigma(1,0) = rz;  sigma(1,1) = 1.0;
+  
+  // Eigen decomposition — matches rmvnorm method="eigen"
+  arma::vec eigval;
+  arma::mat eigvec;
+  arma::eig_sym(eigval, eigvec, sigma);
+  
+  // R = t(ev$vectors %*% (t(ev$vectors) * sqrt(pmax(ev$values, 0))))
+  arma::mat R = arma::trans(
+    eigvec *
+      arma::diagmat(arma::sqrt(arma::clamp(eigval, 0.0, arma::datum::inf))) *
+      arma::trans(eigvec)
+  );
+  
+  // Draw K*2 values row-major (byrow=TRUE matches rmvnorm)
+  Rcpp::NumericVector z_all = Rcpp::rnorm(K * 2, 0.0, 1.0);
+  
+  // Fill matrix row-by-row
+  arma::mat z(K, 2);
+  for (int i = 0; i < K; i++) {
+    z(i, 0) = z_all[2*i];
+    z(i, 1) = z_all[2*i + 1];
+  }
+  
+  // Apply R matrix: retval = z %*% R
+  arma::mat retval = z * R;
+  
+  // Extract columns
+  z1 = retval.col(0);
+  z2 = retval.col(1);
+}
+
 // [[Rcpp::export]]
 double mccovx1x2_cpp(double rz, Rcpp::Function Gx1, Rcpp::Function Gx2,
                      double rx, arma::vec meanx, arma::vec sdx,
                      bool pNorm_1, bool pNorm_2, int K)
 {
-  // Generate bivariate normal samples in C++ (Armadillo)
-  arma::mat Sigmaz = arma::eye(2, 2);
-  Sigmaz(0,1) = Sigmaz(1,0) = rz;
-  arma::mat z = arma::mvnrnd(arma::zeros(2), Sigmaz, K);
+  // Generate correlated normals matching rmvnorm exactly
+  arma::vec z1, z2;
+  rmvnorm_eigen_cpp(K, rz, z1, z2);
   
-  // Apply pnorm in C++ (Armadillo normcdf)
-  arma::vec p1 = arma::normcdf(z.row(0).t());
-  arma::vec p2 = arma::normcdf(z.row(1).t());
+  // Apply pnorm or identity
+  arma::vec p1 = pNorm_1 ? arma::normcdf(z1) : z1;
+  arma::vec p2 = pNorm_2 ? arma::normcdf(z2) : z2;
   
-  // If pNorm flags are false, use z directly instead of pnorm(z)
-  if (!pNorm_1) p1 = z.row(0).t();
-  if (!pNorm_2) p2 = z.row(1).t();
+  // Call R marginal inverse CDFs
+  arma::vec x1 = Rcpp::as<arma::vec>(Gx1(Rcpp::wrap(p1)));
+  arma::vec x2 = Rcpp::as<arma::vec>(Gx2(Rcpp::wrap(p2)));
   
-  // Call R marginal inverse CDFs (vectorized)
-  Rcpp::NumericVector p1_r = Rcpp::wrap(p1);
-  Rcpp::NumericVector p2_r = Rcpp::wrap(p2);
-  Rcpp::NumericVector x1_r = Rcpp::as<Rcpp::NumericVector>(Gx1(p1_r));
-  Rcpp::NumericVector x2_r = Rcpp::as<Rcpp::NumericVector>(Gx2(p2_r));
-  arma::vec x1 = Rcpp::as<arma::vec>(x1_r);
-  arma::vec x2 = Rcpp::as<arma::vec>(x2_r);
-  
-  // Compute covariance in C++
+  // Compute covariance
   double covx1x2 = arma::sum(x1 % x2) / K;
   double res = (covx1x2 - arma::prod(meanx)) / arma::prod(sdx);
   
@@ -38,49 +71,37 @@ double mccovx1x2_cpp(double rz, Rcpp::Function Gx1, Rcpp::Function Gx2,
 double mccovx1x2prime_cpp(double rz, Rcpp::Function Gx1, Rcpp::Function Gx2,
                           arma::vec sdx, bool pNorm_1, bool pNorm_2, int K)
 {
-  // Generate bivariate normal samples in C++
-  arma::mat Sigmaz = arma::eye(2, 2);
-  Sigmaz(0,1) = Sigmaz(1,0) = rz;
-  arma::mat z = arma::mvnrnd(arma::zeros(2), Sigmaz, K);
+  // Generate correlated normals matching rmvnorm exactly
+  arma::vec z1, z2;
+  rmvnorm_eigen_cpp(K, rz, z1, z2);
   
-  // Apply pnorm in C++
-  arma::vec p1 = arma::normcdf(z.row(0).t());
-  arma::vec p2 = arma::normcdf(z.row(1).t());
-  
-  if (!pNorm_1) p1 = z.row(0).t();
-  if (!pNorm_2) p2 = z.row(1).t();
+  // Apply pnorm or identity
+  arma::vec p1 = pNorm_1 ? arma::normcdf(z1) : z1;
+  arma::vec p2 = pNorm_2 ? arma::normcdf(z2) : z2;
   
   // Call R marginal inverse CDFs
-  Rcpp::NumericVector p1_r = Rcpp::wrap(p1);
-  Rcpp::NumericVector p2_r = Rcpp::wrap(p2);
-  Rcpp::NumericVector x1_r = Rcpp::as<Rcpp::NumericVector>(Gx1(p1_r));
-  Rcpp::NumericVector x2_r = Rcpp::as<Rcpp::NumericVector>(Gx2(p2_r));
-  arma::vec x1 = Rcpp::as<arma::vec>(x1_r);
-  arma::vec x2 = Rcpp::as<arma::vec>(x2_r);
+  arma::vec x1 = Rcpp::as<arma::vec>(Gx1(Rcpp::wrap(p1)));
+  arma::vec x2 = Rcpp::as<arma::vec>(Gx2(Rcpp::wrap(p2)));
   
-  // hLeftX_vec equivalent, computed directly in C++
-  double g = 2.0 * M_PI * sqrt(1.0 - rz*rz);
-  double gprime = 2.0 * M_PI * 0.5 * (-2.0*rz) * pow(1.0 - rz*rz, -0.5);
-  double h = 2.0 * (1.0 - rz*rz);
+  // hLeftX computation — vectorized, matches hLeftX_vec exactly
+  double g       = 2.0 * M_PI * sqrt(1.0 - rz*rz);
+  double gprime  = 2.0 * M_PI * 0.5 * (-2.0*rz) * pow(1.0 - rz*rz, -0.5);
+  double h       = 2.0 * (1.0 - rz*rz);
   double hsquare = h * h;
-  double hprime = -4.0 * rz;
+  double hprime  = -4.0 * rz;
   
-  arma::vec z1 = z.row(0).t();
-  arma::vec z2 = z.row(1).t();
-  
-  arma::vec l = -(arma::square(z1) - 2.0*rz*z1%z2 + arma::square(z2));
+  arma::vec l      = -(arma::square(z1) - 2.0*rz*(z1%z2) + arma::square(z2));
   arma::vec lprime = 2.0 * z1 % z2;
   arma::vec numint = lprime*h - hprime*l;
   arma::vec numout = (numint/hsquare)*g - gprime;
-  arma::vec hx = numout / g;
+  arma::vec hx     = numout / g;
   
   // Compute derivative
-  double covprime = arma::sum(x1 % x2 % hx) / K;
+  double covprime   = arma::sum(x1 % x2 % hx) / K;
   double const_term = 1.0 / arma::prod(sdx);
   
   return const_term * covprime;
 }
-
 // for test purposes only: must equal output of rmvnorm
 
 // [[Rcpp::export]]
