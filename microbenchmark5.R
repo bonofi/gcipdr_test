@@ -163,11 +163,11 @@ cat("Max absolute difference:", max(abs(z_r_eigen - z_cpp_eigen)), "\n")
 
 #### START TESTS
 
-testdat <- mtcars[, 1:4]
+testdat <- mtcars[, 1:5]
 
 # Compare if Rccp conversion 
 # speeds up routine (expected x2) 
-# (commit: e83c484425d0d9c3dc90b3bd93acfec9e7b5438b)
+# (commit: 407b55895dba452f6de14c0f641eb36233db9cc7)
 # 
 res <- microbenchmark::microbenchmark(
   {
@@ -180,10 +180,39 @@ res <- microbenchmark::microbenchmark(
     gcipdrtest::Simulate.data.given.IPD(testdat, H=5, stochastic.integration = TRUE, 
                                         SI_k = 50000, method = 3, checkdata = TRUE,
                                         tabulate.similar.data = TRUE)},
-  times = 30L
- # check = "equal"
+  times = 30L,
+  check = "equal"
 )
 
 print(res)
 
 boxplot(res, names = c("gcipdr", "gcipdrtest"))
+
+
+### ASEESS DOMINANCE OG GX1 GX2
+
+# Test: how much time is spent in Gx1/Gx2 callbacks vs rest?
+K <- 50000
+rz <- 0.3
+
+# Time the marginal inverse call alone (assuming gamma marginal)
+p_test <- runif(K)
+system.time({
+  for (i in 1:30){
+    x1 <- gcipdrtest::qgmom(p_test, 3, 1)
+    x2 <- gcipdrtest::qgmom(p_test, 3, 1)
+  } 
+    
+})
+
+# Time the full mccovx1x2_cpp call
+system.time({
+  for (i in 1:30) mccovx1x2_cpp(
+    rz = 0.3, 
+    Gx1 = \(x) gcipdrtest::qgmom(x, 3, 1), 
+    Gx2 = \(x) gcipdrtest::qgmom(x, 3, 1), 
+    rx = 0, 
+    meanx = 3, 
+    sdx = 1, 
+    TRUE, TRUE, K)
+})
