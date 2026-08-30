@@ -14,15 +14,17 @@ DataRebuild(H, n, correlation.matrix, moments, x.mode,
 
 }
 \arguments{
-\item{H}{integer number of independent IPD replicates to be generated.}
+\item{H}{integer number of independent pseudodata replications to be generated.}
 
-\item{n}{integer number of independent IPD records. Ex: number of rows (subjects) in original IPD.}
+\item{n}{integer number of independent IPD observations.}
 
-\item{correlation.matrix}{pairwise IPD correlations values.}
+\item{correlation.matrix}{pairwise IPD correlation matrix. See 'Return.key.IPD.summaries'.}
 
-\item{moments}{numeric array of IPD marginal moments up to fourth degree for all IPD variables (columns).}
+\item{moments}{numeric array of IPD marginal moments. See 'Return.key.IPD.summaries'.}
 
 \item{x.mode}{logical vector: is IPD marginal variable binary (TRUE) or not ?}
+
+\item{user_defined_marginals}{list of inverse distributions (quantile functions) moment-defined for each marginal variable.}
 
 \item{johnson.parameters}{array of Johnson parameters for each IPD marginal variable. Depends on CRAN archived 'JohnsonDistribution' package. If NULL it is computed on given 'moments'.}
 
@@ -34,7 +36,7 @@ DataRebuild(H, n, correlation.matrix, moments, x.mode,
   Spearman (rank.corr), Pearson (moment.corr), or Waerden
   (normal.corr). see Details}
 
-\item{marg.model}{either "gamma" or "johnson" for modeling of non-binary IPD marginal. All binary marginals are modeled via a Bernoulli distribution, or a Beta distribution if Kruskal analytic conversion is used (see below).}
+\item{marg.model}{either "gamma", "johnson" (continuous marginals) or "user_defined". If not user defined, all binary marginals are modeled via a Bernoulli distribution or a Beta distribution if Kruskal analytic conversion is used (see below).}
 
 \item{variable.names}{names of IPD marginal variables. If NULL (Default) automatic labels are generated.}
 

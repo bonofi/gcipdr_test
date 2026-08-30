@@ -736,11 +736,11 @@ norta.method <- function( simulation.size, sample.size, correlation.matrix,
 
 ## function directly sample from an arbitrary multivariate random vector with given marginal distributions and given correlation structure, Rx. The method exploits inverse probability sampling to map a multivatriate standard normal vector with correlation Rz (unknown) to the desired arbitrary multivariatre random vector. To succed a root problem must be solved for Rz, such that a solution for Rz ensures the properties of Rx are transfered into the desired multivariate vector.         *OUTPUT*: a list of (random) datasets of lenght H (the space of simiar data X*)                               
 
-Generate.with.Complete.correlation <- function(H, n, correlation.matrix, moments,
+Generate.with.Complete.correlation <- function(H, n, correlation.matrix, moments, user_defined_marginals,
                                                johnson.parameters, stochastic.integration, x.mode,
                                                variable.names, SBjohn.correction = F,
                                                corrtype=c("moment.corr", "rank.corr" , "normal.corr"),
-                                               marg.model=c("gamma", "johnson"),
+                                               marg.model=c("gamma", "johnson", "user_defined"),
                                                SI_k = 8000, NI_tol = 1e-05, NI_maxEval = 20,
                                                input.sn.corr = NULL, rescale.smoothed.binary = FALSE)
 {
@@ -761,7 +761,8 @@ Generate.with.Complete.correlation <- function(H, n, correlation.matrix, moments
                                                            johnson.parameters,
                                                            n,
                                                            x.mode, corrtype, SBjohn.correction
-                                                           )
+                                                           ),
+                        user_defined = user_defined_marginals     # must provide a list of inverse distrib funcs (quintiles) for each marginal variable
                         )
                                         # if x is binary and corrtype not rank : norta second moment is bernoulli
     Ind <- x.mode & corrtype == "moment.corr"
@@ -797,17 +798,18 @@ Generate.with.Complete.correlation <- function(H, n, correlation.matrix, moments
 #'
 #' @description `DataRebuild()` generates artificial data, that is stochastic copies of the original IPD, by taking empirical IPD distributional summaries as input data only.
 #'
-#' @param H integer number of independent IPD replicates to be generated.
-#' @param n integer number of independent IPD records. Ex: number of rows (subjects) in original IPD.
-#' @param correlation.matrix pairwise IPD correlation matrix.
-#' @param moments numeric array of IPD marginal moments up to fourth degree for all IPD variables (columns).
-#' @param johnson.parameters array of Johnson parameters for each IPD marginal variable. Depends on CRAN archived 'JohnsonDistribution' package. If NULL it is computed on given 'moments'.
+#' @param H integer number of independent pseudodata replications to be generated.
+#' @param n integer number of independent IPD observations.
+#' @param correlation.matrix pairwise IPD correlation matrix. See 'Return.key.IPD.summaries'.
+#' @param moments numeric array of IPD marginal moments. See 'Return.key.IPD.summaries'.
 #' @param x.mode logical vector: is IPD marginal variable binary (TRUE) or not ?
+#' @param user_defined_marginals list of inverse distributions (quantile functions) moment-defined for each marginal variable
+#' @param johnson.parameters array of Johnson parameters for each IPD marginal variable. Depends on CRAN archived 'JohnsonDistribution' package. If NULL it is computed on given 'moments'.
 #' @param stochastic.integration logical: should Monte Carlo integration be used to resolve Gaussian copula inversion (NORTA transformation)? Default to FALSE, that is numerical integration relying on package 'cubature' is used first. 
 #' @param data.rearrange method of IPD dependence reconstruction based on all pairwise IPD correlations (norta), or on first degree correlations only (incomplete).
 #' @param corrtype what type of IPD correlation matrix are you feeding in ? Spearman (rank.corr), Pearson (moment.corr), or Waerden (normal.corr). see Deatails.
 #'
-#' @param marg.model either "gamma" or "johnson" for modeling of non-binary IPD marginal. All binary marginals are modeled via a Bernoulli distribution, or a Beta distribution if Kruskal analytic conversion is used (see below).
+#' @param marg.model either "gamma", "johnson" (continuous marginals) or "user_defined". If not user defined, all binary marginals are modeled via a Bernoulli distribution or a Beta distribution if Kruskal analytic conversion is used (see below).
 #'
 #' @param variable.names names of IPD marginal variables. If NULL (Default) automatic labels are generated.
 #'
@@ -855,10 +857,11 @@ Generate.with.Complete.correlation <- function(H, n, correlation.matrix, moments
 #' 
 
 
-DataRebuild <- function(H, n, correlation.matrix, moments, x.mode, johnson.parameters = NULL,
+DataRebuild <- function(H, n, correlation.matrix, moments, x.mode,
+                        user_defined_marginals = NULL, johnson.parameters = NULL,
                         stochastic.integration = FALSE, data.rearrange = c("norta", "incomplete"),
                         corrtype = c("moment.corr", "rank.corr", "normal.corr"),
-                        marg.model = c("gamma", "johnson"), variable.names = NULL,
+                        marg.model = c("gamma", "johnson", "user_defined"), variable.names = NULL,
                         SBjohn.correction = FALSE, compute.eec = FALSE, checkdata = FALSE,
                         tabulate.similar.data =  FALSE, SI_k = 8000, NI_tol = 1e-02, NI_maxEval = 500,
                         input.sn.corr = NULL, cp.finetune = FALSE,
@@ -897,7 +900,7 @@ DataRebuild <- function(H, n, correlation.matrix, moments, x.mode, johnson.param
                                                                      variable.names, SBjohn.correction,
                                                                      compute.eec, corrtype, marg.model
                                                                      ),
-                    norta= Generate.with.Complete.correlation(H, n, correlation.matrix, moments,
+                    norta= Generate.with.Complete.correlation(H, n, correlation.matrix, moments, user_defined_marginals,
                                                               johnson.parameters, stochastic.integration,
                                                               x.mode, variable.names, SBjohn.correction,
                                                               corrtype, marg.model, SI_k, NI_tol, NI_maxEval,
@@ -1110,7 +1113,7 @@ is.data.similar <- function(Xspace, correlation.matrix, moments,
 
 
 
-#' @title IPD reconstruction from IPD summaries directly computed on IPD.
+#' @title IPD reconstruction from IPD summaries directly computed on IPD (DEPRECATED).
 #'
 #' @description `Simulate.data.given.IPD()` is basically a wrapper for `DataRebuild()` but additionally assumes original IPD is available.
 #'
@@ -1319,7 +1322,7 @@ Print.simul.settings <- function(settings, N, H,
 }
 
 
-#' @title Reconstruction of several (unrelated) available IPDs.
+#' @title Reconstruction of several (unrelated) available IPDs (DEPRECATED).
 #'
 #' @description This function can be used as simple application of `Simulate.data.given.IPD()` on a list of IPDs, DATA_1, DATA_2, DATA_3...
 #'
