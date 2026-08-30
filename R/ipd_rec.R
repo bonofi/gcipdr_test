@@ -736,13 +736,14 @@ norta.method <- function( simulation.size, sample.size, correlation.matrix,
 
 ## function directly sample from an arbitrary multivariate random vector with given marginal distributions and given correlation structure, Rx. The method exploits inverse probability sampling to map a multivatriate standard normal vector with correlation Rz (unknown) to the desired arbitrary multivariatre random vector. To succed a root problem must be solved for Rz, such that a solution for Rz ensures the properties of Rx are transfered into the desired multivariate vector.         *OUTPUT*: a list of (random) datasets of lenght H (the space of simiar data X*)                               
 
-Generate.with.Complete.correlation <- function(H, n, correlation.matrix, moments, user_defined_marginals,
+Generate.with.Complete.correlation <- function(H, n, correlation.matrix, moments,
                                                johnson.parameters, stochastic.integration, x.mode,
                                                variable.names, SBjohn.correction = F,
                                                corrtype=c("moment.corr", "rank.corr" , "normal.corr"),
                                                marg.model=c("gamma", "johnson", "user_defined"),
                                                SI_k = 8000, NI_tol = 1e-05, NI_maxEval = 20,
-                                               input.sn.corr = NULL, rescale.smoothed.binary = FALSE)
+                                               input.sn.corr = NULL, rescale.smoothed.binary = FALSE,
+                                               user_defined_marginals = NULL)
 {
     corrtype <- match.arg(corrtype)
     marg.model <- match.arg(marg.model)
@@ -754,6 +755,8 @@ Generate.with.Complete.correlation <- function(H, n, correlation.matrix, moments
     K <- length(mx)
     if( K != length(variable.names))
         stop("variable labels do not match the number of variables")
+    if (marg.model == "user_defined" & is.null(user_defined_marginals))
+      stop("You must provide user_defined_marignals if marg-model = 'user_defined'")
     marginals <- switch(marg.model, # marginal inverse distributions
                         gamma= gamma.quintiles.looped( mx, sdx, n, x.mode, corrtype ),
                         johnson = johnson.quintiles.looped(mx,
@@ -835,6 +838,7 @@ Generate.with.Complete.correlation <- function(H, n, correlation.matrix, moments
 #'@param rescale.smoothed.binary if Kruskal analytic conversion was used and x.mode = T, it rescales smoothed binary variables into integer format (typically needed). Default FALSE.
 #'
 #'@param assume.all.smooth logical. If NORTA method is used, it pretends an input Pearson correlation matrix is already a valid Kruskal solution, which falsely assumes all variables are continuous, when some are actually discrete. This is biased but it can yield quick (fine-tunable -- see 'cp.finetune'). Default FALSE.
+#'@param user_defined_marginals list. List of user-defined quantile functions, if marg.model = 'user_defined'. Each element specifies the inverse distribution of the corresponding IPD marginal in exactly the same order as specified in the correlation-matrix or in the moments array. It overrides 'x.mode'.
 #'  
 #' @return An object of class 'similar.data'.
 #'
@@ -858,14 +862,15 @@ Generate.with.Complete.correlation <- function(H, n, correlation.matrix, moments
 
 
 DataRebuild <- function(H, n, correlation.matrix, moments, x.mode,
-                        user_defined_marginals = NULL, johnson.parameters = NULL,
+                        johnson.parameters = NULL,
                         stochastic.integration = FALSE, data.rearrange = c("norta", "incomplete"),
                         corrtype = c("moment.corr", "rank.corr", "normal.corr"),
                         marg.model = c("gamma", "johnson", "user_defined"), variable.names = NULL,
                         SBjohn.correction = FALSE, compute.eec = FALSE, checkdata = FALSE,
                         tabulate.similar.data =  FALSE, SI_k = 8000, NI_tol = 1e-02, NI_maxEval = 500,
                         input.sn.corr = NULL, cp.finetune = FALSE,
-                        rescale.smoothed.binary = FALSE, assume.all.smooth = FALSE)
+                        rescale.smoothed.binary = FALSE, assume.all.smooth = FALSE, 
+                        user_defined_marginals = NULL)
 {
     data.rearrange <- match.arg(data.rearrange)
     corrtype <- match.arg(corrtype)
@@ -900,11 +905,12 @@ DataRebuild <- function(H, n, correlation.matrix, moments, x.mode,
                                                                      variable.names, SBjohn.correction,
                                                                      compute.eec, corrtype, marg.model
                                                                      ),
-                    norta= Generate.with.Complete.correlation(H, n, correlation.matrix, moments, user_defined_marginals,
+                    norta= Generate.with.Complete.correlation(H, n, correlation.matrix, moments,
                                                               johnson.parameters, stochastic.integration,
                                                               x.mode, variable.names, SBjohn.correction,
                                                               corrtype, marg.model, SI_k, NI_tol, NI_maxEval,
-                                                              input.sn.corr, rescale.smoothed.binary
+                                                              input.sn.corr, rescale.smoothed.binary,
+                                                              user_defined_marginals
                                                               )
                     )
     rkcbool <- (cp.finetune & corrtype == "rank.corr" & any(x.mode) & rescale.smoothed.binary & data.rearrange == "norta")
@@ -1129,12 +1135,12 @@ is.data.similar <- function(Xspace, correlation.matrix, moments,
 # similar data object, arg method = 1 to 8
 
 
-Simulate.data.given.IPD <- function(data, H = NULL, method, fill.missing = F,  # TODO(me) : u may want to set fill.missing = TRUE later to ensure maximal generality
-                                    SBjohn.correction = F, stochastic.integration = F,
-                                    checkdata = F, compute.eec = F,
+Simulate.data.given.IPD <- function(data, H = NULL, method, fill.missing = FALSE,  # TODO(me) : u may want to set fill.missing = TRUE later to ensure maximal generality
+                                    SBjohn.correction = FALSE, stochastic.integration = FALSE,
+                                    checkdata = FALSE, compute.eec = FALSE,
                                     tabulate.similar.data =  FALSE, print.message = TRUE,
                                     set.corr.matr2null = FALSE, SI_k = 8000, NI_tol = 1e-05,
-                                    NI_maxEval = 20, input.sn.corr = NULL)
+                                    NI_maxEval = 20, input.sn.corr = NULL, user_defined_marginals = NULL)
 {
     method.settings.combo <-  setting.comb.matrix()  # see below ..
     data.rearrange <- method.settings.combo[1 ,method]
@@ -1159,7 +1165,8 @@ Simulate.data.given.IPD <- function(data, H = NULL, method, fill.missing = F,  #
                                    variable.names, SBjohn.correction,
                                    compute.eec, checkdata, tabulate.similar.data,
                                    SI_k = SI_k, NI_tol = NI_tol, NI_maxEval = NI_maxEval,
-                                   input.sn.corr = input.sn.corr
+                                   input.sn.corr = input.sn.corr,
+                                   user_defined_marginals = user_defined_marginals
                                    )
     similar.data.space <- data.simulation$Xspace
     is.data.statistically.similar <- data.simulation$is.similar  # can be NA is checkdata = FALSE
@@ -1286,7 +1293,13 @@ setting.comb.matrix <- function()
         c( "incomplete", "gamma", "moment.corr" ),
         c( "incomplete", "johnson", "moment.corr" ),
         c( "norta", "gamma", "rank.corr" ),
-        c( "norta", "johnson", "rank.corr" ) ),
+        c( "norta", "johnson", "rank.corr" ),
+        ### ADDING USER DEFINED MARGINALS OPTION: METHOD 10 = NORTA Pearson-corr user-defined marginals
+        c( "incomplete", "user_defined", "rank.corr" ),
+        c( "norta", "user_defined", "moment.corr" ),
+        c( "incomplete", "user_defined", "moment.corr" ),
+        c( "norta", "user_defined", "rank.corr" )
+        ),
         nrow = 3
         )   # eight combination for data simulation: create varaible 'simulation type: approach.1, approach.2, ...' DONE in bias.looped
 
