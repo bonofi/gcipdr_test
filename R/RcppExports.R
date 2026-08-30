@@ -2,6 +2,6 @@
 # Generator token: 10BE3573-1514-4C36-9D1C-5A225CD40393
 
 findzerocorr <- function(xell, x, test, rf_type) {
-    .Call('_gcipdr_findzerocorr', PACKAGE = 'gcipdr', xell, x, test, rf_type)
+    .Call('_gcipdrtest_findzerocorr', PACKAGE = 'gcipdrtest', xell, x, test, rf_type)
 }
 

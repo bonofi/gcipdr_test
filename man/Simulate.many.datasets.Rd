@@ -2,12 +2,23 @@
 % Please edit documentation in R/ipd_rec.R
 \name{Simulate.many.datasets}
 \alias{Simulate.many.datasets}
-\title{Reconstruction of several (unrelated) available IPDs.}
+\title{Reconstruction of several (unrelated) available IPDs (DEPRECATED).}
 \usage{
-Simulate.many.datasets(datalist, H, method, fill.missing = FALSE,
-  SBjohn.correction = F, stochastic.integration = F, checkdata = F,
-  compute.eec = F, tabulate.similar.data = FALSE,
-  set.corr.matr2null = FALSE)
+Simulate.many.datasets(
+  datalist,
+  H,
+  method,
+  fill.missing = FALSE,
+  SBjohn.correction = F,
+  stochastic.integration = F,
+  checkdata = F,
+  compute.eec = F,
+  tabulate.similar.data = FALSE,
+  set.corr.matr2null = FALSE,
+  SI_k = 8000,
+  NI_tol = 1e-05,
+  NI_maxEval = 20
+)
 }
 \description{
 This function can be used as simple application of `Simulate.data.given.IPD()` on a list of IPDs, DATA_1, DATA_2, DATA_3...
