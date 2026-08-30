@@ -11,6 +11,8 @@ unlink(pkgFile)
 library(tidyverse)
 library(microbenchmark)
 library(remotes)
+library(Johnson)
+?Johnson::moment()
 
 pak::pak("bonorico/gcipdr")
 pak::pak("bonofi/gcipdr_test@optimization_kruskal_inits")
