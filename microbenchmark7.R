@@ -11,8 +11,8 @@ unlink(pkgFile)
 library(tidyverse)
 library(microbenchmark)
 library(remotes)
-library(Johnson)
-?Johnson::moment()
+library(SuppDists)
+SuppDists::moments(testdat$mpg)
 
 pak::pak("bonorico/gcipdr")
 pak::pak("bonofi/gcipdr_test@optimization_kruskal_inits")
@@ -39,6 +39,26 @@ test <- gcipdrtest::Simulate.data.given.IPD(
   )
   
 )
+
+
+Jparms1 <- JohnsonFit(testdat$mpg)
+
+
+
+test2 <- gcipdrtest::Simulate.data.given.IPD(
+  testdat, H=5, stochastic.integration = TRUE, 
+  SI_k = 50000, method = 10, # method 10 user-defined marginals 
+  checkdata = TRUE,
+  tabulate.similar.data = TRUE,
+  user_defined_marginals = list(
+    function(x) qJohnson(x, parms = Jparms1),
+    function(x) qnorm(x, mean = 20, sd = 6)
+    )
+  )
+
+
+
+
 
 
 res <- microbenchmark::microbenchmark(
