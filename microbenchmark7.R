@@ -8,6 +8,7 @@ download.file(url = url, destfile = pkgFile)
 install.packages(pkgs=pkgFile, type="source", repos=NULL)
 unlink(pkgFile)
 
+library(tidyverse)
 library(microbenchmark)
 library(remotes)
 
@@ -21,13 +22,21 @@ library(gcipdrtest)
 
 #### START TESTS
 
-testdat <- mtcars[, 1:5]
+testdat <- mtcars[, 1:2]
+apply(testdat, 2, mean)
+apply(testdat, 2, sd)
 
-# Compare if Kruskal initialization  
-# speeds up routine (expected x2) 
-# (commit: c69fa3257b6076db80cfc33868b14938aa395715)
-
-
+test <- gcipdrtest::Simulate.data.given.IPD(
+  testdat, H=5, stochastic.integration = TRUE, 
+  SI_k = 50000, method = 10, # method 10 user-defined amrginals 
+  checkdata = TRUE,
+  tabulate.similar.data = TRUE,
+  user_defined_marginals = list(
+    function(x) qnorm(x, mean = 20, sd = 6),
+    function(x) qlnorm(x, meanlog = log(6), sdlog = log(1.8))
+  )
+  
+)
 
 
 res <- microbenchmark::microbenchmark(
