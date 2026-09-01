@@ -679,12 +679,25 @@ rNORTA <- function( sample.size, L, yes.normal.percentile,
 rNORTA.looped <- function(simulation.size, sample.size, L, yes.normal.percentile,
                           marginal.inverse.distributions, variable.names )
 {
-    out <- mclapply(1:simulation.size, function(i)
-        rNORTA( sample.size, L, yes.normal.percentile,
-               marginal.inverse.distributions, variable.names)
-        )
-    return(out)
-
+  return(
+    
+    cbind(
+      rNORTA( 
+        sample.size*simulation.size, 
+        L, yes.normal.percentile,
+        marginal.inverse.distributions, 
+        variable.names),
+      run = rep(
+        1:simulation.size, 
+        rep(
+          sample.size, 
+          simulation.size
+        ))
+      
+    )
+  )
+  
+  
 }
 
 
