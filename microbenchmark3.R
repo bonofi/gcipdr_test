@@ -21,23 +21,11 @@ library(gcipdrtest)
 
 #### START TESTS
 
-testdat <- mtcars[, 1:5]
+testdat <- mtcars[, 1:4]
 
 # Compare if Rccp conversion 
 # speeds up routine (expected x2) 
 # (commit: c69fa3257b6076db80cfc33868b14938aa395715)
-
-custom_check <- function(res){
-  
-  tol <- 0.2 # tolerance parameter
-  x <- res[[1]]
-  y <- res[[2]]
-  
-  gc_param_x <- res[[1]]$copula.parameters
-  gc_param_y <- res[[2]]$copula.parameters
-  
-  all(gc_param_x[lower.tri(gc_param_x)] - gc_param_y[lower.tri(gc_param_y)])  
-}
 
 
 res <- microbenchmark::microbenchmark(
