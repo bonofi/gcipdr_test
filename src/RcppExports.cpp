@@ -5,17 +5,36 @@
 #include <Rcpp.h>
 
 using namespace Rcpp;
-using namespace arma;
-using namespace std;
 
-// findzerocorr
-List findzerocorr(const vec& xell, const vec& x, const double test, const std::string rf_type);
-RcppExport SEXP _gcipdr_findzerocorr(SEXP xellSEXP, SEXP xSEXP, SEXP testSEXP, SEXP rf_typeSEXP) {
+#ifdef RCPP_USE_GLOBAL_ROSTREAM
+Rcpp::Rostream<true>&  Rcpp::Rcout = Rcpp::Rcpp_cout_get();
+Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
+#endif
+
+// newtrap_one_cpp
+Rcpp::List newtrap_one_cpp(Rcpp::Function fdist, Rcpp::Function fprime, Rcpp::Nullable<Rcpp::Function> safecheck_arg, double start, double tol, int maxit);
+RcppExport SEXP _gcipdrtest_newtrap_one_cpp(SEXP fdistSEXP, SEXP fprimeSEXP, SEXP safecheck_argSEXP, SEXP startSEXP, SEXP tolSEXP, SEXP maxitSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< const vec& >::type xell(xellSEXP);
-    Rcpp::traits::input_parameter< const vec& >::type x(xSEXP);
+    Rcpp::traits::input_parameter< Rcpp::Function >::type fdist(fdistSEXP);
+    Rcpp::traits::input_parameter< Rcpp::Function >::type fprime(fprimeSEXP);
+    Rcpp::traits::input_parameter< Rcpp::Nullable<Rcpp::Function> >::type safecheck_arg(safecheck_argSEXP);
+    Rcpp::traits::input_parameter< double >::type start(startSEXP);
+    Rcpp::traits::input_parameter< double >::type tol(tolSEXP);
+    Rcpp::traits::input_parameter< int >::type maxit(maxitSEXP);
+    rcpp_result_gen = Rcpp::wrap(newtrap_one_cpp(fdist, fprime, safecheck_arg, start, tol, maxit));
+    return rcpp_result_gen;
+END_RCPP
+}
+// findzerocorr
+List findzerocorr(const arma::vec& xell, const arma::vec& x, const double test, const std::string rf_type);
+RcppExport SEXP _gcipdrtest_findzerocorr(SEXP xellSEXP, SEXP xSEXP, SEXP testSEXP, SEXP rf_typeSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const arma::vec& >::type xell(xellSEXP);
+    Rcpp::traits::input_parameter< const arma::vec& >::type x(xSEXP);
     Rcpp::traits::input_parameter< const double >::type test(testSEXP);
     Rcpp::traits::input_parameter< const std::string >::type rf_type(rf_typeSEXP);
     rcpp_result_gen = Rcpp::wrap(findzerocorr(xell, x, test, rf_type));
@@ -24,11 +43,12 @@ END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
-    {"_gcipdr_findzerocorr", (DL_FUNC) &_gcipdr_findzerocorr, 4},
+    {"_gcipdrtest_newtrap_one_cpp", (DL_FUNC) &_gcipdrtest_newtrap_one_cpp, 6},
+    {"_gcipdrtest_findzerocorr", (DL_FUNC) &_gcipdrtest_findzerocorr, 4},
     {NULL, NULL, 0}
 };
 
-RcppExport void R_init_gcipdr(DllInfo *dll) {
+RcppExport void R_init_gcipdrtest(DllInfo *dll) {
     R_registerRoutines(dll, NULL, CallEntries, NULL, NULL);
     R_useDynamicSymbols(dll, FALSE);
 }

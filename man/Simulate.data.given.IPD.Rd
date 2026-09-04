@@ -4,21 +4,32 @@
 \alias{Simulate.data.given.IPD}
 \title{IPD reconstruction from IPD summaries directly computed on IPD.}
 \usage{
-Simulate.data.given.IPD(data, H = NULL, method, fill.missing = F,
-  SBjohn.correction = F, stochastic.integration = F, checkdata = F,
-  compute.eec = F, tabulate.similar.data = FALSE,
-  print.message = TRUE, set.corr.matr2null = FALSE)
+Simulate.data.given.IPD(
+  data,
+  H = NULL,
+  method,
+  fill.missing = F,
+  SBjohn.correction = F,
+  stochastic.integration = F,
+  checkdata = F,
+  compute.eec = F,
+  tabulate.similar.data = FALSE,
+  print.message = TRUE,
+  set.corr.matr2null = FALSE,
+  SI_k = 8000,
+  NI_tol = 1e-05,
+  NI_maxEval = 20,
+  input.sn.corr = NULL
+)
 }
 \description{
-`Simulate.data.given.IPD()` is basically a wrapper for `DataRebuild()`
-but additionally computes the needed input IPD summaries from the IPD automatically.
+`Simulate.data.given.IPD()` is basically a wrapper for `DataRebuild()` but additionally assumes original IPD is available.
 }
-
+\details{
+This module is either meant for experimental purposes or when original IPD is actually available. For instance the module eases the analysis pipeline from IPD to IPD reconstruction when the user wants simply to check to utility of this package. Alternatively a network server having the IPD but not disclosure rights can think to either share the IPD summaries or a synthetic, anonymous, version of the original IPD.
+}
 \section{Note}{
- the arguments of this function are mostly inherited by
- `DataRebuild()`. However fill.missing (logical, default to FALSE) is
- inherited by `Return.key.IPD.summaries()`. Also argument method
- (integer 1 to 4) is an encoding for different combinations of data.rearrange, corrtype, and marg.model (see 'setting.comb.matrix()' in source code).
+ the arguments of this function are mostly inherited by `DataRebuild()`. However fill.missing (logical, default to FALSE) is inherited by `Return.key.IPD.summaries()`. Also argument method (integer 1 to 4) sum up the available combinations from data.rearrange, corrtype, and marg.model into just four sensible options (see 'setting.comb.matrix()' in source code).
 }
 
 \seealso{
