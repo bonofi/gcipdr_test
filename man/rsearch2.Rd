@@ -4,9 +4,16 @@
 \alias{rsearch2}
 \title{Imposition of incomplete IPD correlation structure.}
 \usage{
-rsearch2(xell, x, refstat, mc.extremal.corr = NULL, dz = 0.001,
-  random = TRUE, rf.type = c("joint.rank", "joint.moment", "rank.corr",
-  "moment.corr", "tau.corr"), ties = c("min", "average", "max"))
+rsearch2(
+  xell,
+  x,
+  refstat,
+  mc.extremal.corr = NULL,
+  dz = 0.001,
+  random = TRUE,
+  rf.type = c("joint.rank", "joint.moment", "rank.corr", "moment.corr", "tau.corr"),
+  ties = c("min", "average", "max")
+)
 }
 \description{
 `rsearch2()` implements a permutation-based re-ordering of first-degree-correlated IPD marginals only w.r.t. some fixed reference variable.
