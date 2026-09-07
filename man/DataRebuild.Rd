@@ -14,7 +14,7 @@ DataRebuild(
   stochastic.integration = FALSE,
   data.rearrange = c("norta", "incomplete"),
   corrtype = c("moment.corr", "rank.corr", "normal.corr"),
-  marg.model = c("gamma", "johnson"),
+  marg.model = c("gamma", "johnson", "user_defined"),
   variable.names = NULL,
   SBjohn.correction = FALSE,
   compute.eec = FALSE,
@@ -26,17 +26,18 @@ DataRebuild(
   input.sn.corr = NULL,
   cp.finetune = FALSE,
   rescale.smoothed.binary = FALSE,
-  assume.all.smooth = FALSE
+  assume.all.smooth = FALSE,
+  user_defined_marginals = NULL
 )
 }
 \arguments{
-\item{H}{integer number of independent IPD replicates to be generated.}
+\item{H}{integer number of independent pseudodata replications to be generated.}
 
-\item{n}{integer number of independent IPD records. Ex: number of rows (subjects) in original IPD.}
+\item{n}{integer number of independent IPD observations.}
 
-\item{correlation.matrix}{pairwise IPD correlation matrix.}
+\item{correlation.matrix}{pairwise IPD correlation matrix. See 'Return.key.IPD.summaries'.}
 
-\item{moments}{numeric array of IPD marginal moments up to fourth degree for all IPD variables (columns).}
+\item{moments}{numeric array of IPD marginal moments. See 'Return.key.IPD.summaries'.}
 
 \item{x.mode}{logical vector: is IPD marginal variable binary (TRUE) or not ?}
 
@@ -48,7 +49,7 @@ DataRebuild(
 
 \item{corrtype}{what type of IPD correlation matrix are you feeding in ? Spearman (rank.corr), Pearson (moment.corr), or Waerden (normal.corr). see Deatails.}
 
-\item{marg.model}{either "gamma" or "johnson" for modeling of non-binary IPD marginal. All binary marginals are modeled via a Bernoulli distribution, or a Beta distribution if Kruskal analytic conversion is used (see below).}
+\item{marg.model}{either "gamma", "johnson" (continuous marginals) or "user_defined". If not user defined, all binary marginals are modeled via a Bernoulli distribution or a Beta distribution if Kruskal analytic conversion is used (see below).}
 
 \item{variable.names}{names of IPD marginal variables. If NULL (Default) automatic labels are generated.}
 
@@ -73,6 +74,8 @@ DataRebuild(
 \item{rescale.smoothed.binary}{if Kruskal analytic conversion was used and x.mode = T, it rescales smoothed binary variables into integer format (typically needed). Default FALSE.}
 
 \item{assume.all.smooth}{logical. If NORTA method is used, it pretends an input Pearson correlation matrix is already a valid Kruskal solution, which falsely assumes all variables are continuous, when some are actually discrete. This is biased but it can yield quick (fine-tunable -- see 'cp.finetune'). Default FALSE.}
+
+\item{user_defined_marginals}{list. List of user-defined quantile functions, if marg.model = 'user_defined'. Each element specifies the inverse distribution of the corresponding IPD marginal in exactly the same order as specified in the correlation-matrix or in the moments array. It overrides 'x.mode'.}
 }
 \value{
 An object of class 'similar.data'.

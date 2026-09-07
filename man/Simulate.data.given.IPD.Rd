@@ -2,24 +2,25 @@
 % Please edit documentation in R/ipd_rec.R
 \name{Simulate.data.given.IPD}
 \alias{Simulate.data.given.IPD}
-\title{IPD reconstruction from IPD summaries directly computed on IPD.}
+\title{IPD reconstruction from IPD summaries directly computed on IPD (DEPRECATED).}
 \usage{
 Simulate.data.given.IPD(
   data,
   H = NULL,
   method,
-  fill.missing = F,
-  SBjohn.correction = F,
-  stochastic.integration = F,
-  checkdata = F,
-  compute.eec = F,
+  fill.missing = FALSE,
+  SBjohn.correction = FALSE,
+  stochastic.integration = FALSE,
+  checkdata = FALSE,
+  compute.eec = FALSE,
   tabulate.similar.data = FALSE,
   print.message = TRUE,
   set.corr.matr2null = FALSE,
   SI_k = 8000,
   NI_tol = 1e-05,
   NI_maxEval = 20,
-  input.sn.corr = NULL
+  input.sn.corr = NULL,
+  user_defined_marginals = NULL
 )
 }
 \description{

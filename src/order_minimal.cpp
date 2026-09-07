@@ -127,7 +127,6 @@ List findzerocorr(const arma::vec& xell,
                   const arma::vec& x, 
                   const double test, 
                   const std::string rf_type){
-
   // call type of function to apply
 
   XPtr<funcpointer> xpfun = adressmyfuncs(rf_type);
@@ -140,6 +139,7 @@ List findzerocorr(const arma::vec& xell,
   double check;
  
   arma::uword i = 0;  // instead of int i = 0;
+
 
   check = 1;  // intial check value
 
