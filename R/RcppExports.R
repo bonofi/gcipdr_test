@@ -2,26 +2,26 @@
 # Generator token: 10BE3573-1514-4C36-9D1C-5A225CD40393
 
 mccovx1x2_cpp <- function(rz, Gx1, Gx2, rx, meanx, sdx, pNorm_1, pNorm_2, K) {
-    .Call('_gcipdrtest_mccovx1x2_cpp', PACKAGE = 'gcipdrtest', rz, Gx1, Gx2, rx, meanx, sdx, pNorm_1, pNorm_2, K)
+    .Call('_gcipdr_mccovx1x2_cpp', PACKAGE = 'gcipdr', rz, Gx1, Gx2, rx, meanx, sdx, pNorm_1, pNorm_2, K)
 }
 
 mccovx1x2prime_cpp <- function(rz, Gx1, Gx2, sdx, pNorm_1, pNorm_2, K) {
-    .Call('_gcipdrtest_mccovx1x2prime_cpp', PACKAGE = 'gcipdrtest', rz, Gx1, Gx2, sdx, pNorm_1, pNorm_2, K)
+    .Call('_gcipdr_mccovx1x2prime_cpp', PACKAGE = 'gcipdr', rz, Gx1, Gx2, sdx, pNorm_1, pNorm_2, K)
 }
 
 test_rmvnorm_cpp_cholesky <- function(K, rz) {
-    .Call('_gcipdrtest_test_rmvnorm_cpp_cholesky', PACKAGE = 'gcipdrtest', K, rz)
+    .Call('_gcipdr_test_rmvnorm_cpp_cholesky', PACKAGE = 'gcipdr', K, rz)
 }
 
 test_rmvnorm_cpp_eigen <- function(K, rz) {
-    .Call('_gcipdrtest_test_rmvnorm_cpp_eigen', PACKAGE = 'gcipdrtest', K, rz)
+    .Call('_gcipdr_test_rmvnorm_cpp_eigen', PACKAGE = 'gcipdr', K, rz)
 }
 
 newtrap_one_cpp <- function(fdist, fprime, safecheck_arg, start, tol = 0.01, maxit = 50L) {
-    .Call('_gcipdrtest_newtrap_one_cpp', PACKAGE = 'gcipdrtest', fdist, fprime, safecheck_arg, start, tol, maxit)
+    .Call('_gcipdr_newtrap_one_cpp', PACKAGE = 'gcipdr', fdist, fprime, safecheck_arg, start, tol, maxit)
 }
 
 findzerocorr <- function(xell, x, test, rf_type) {
-    .Call('_gcipdrtest_findzerocorr', PACKAGE = 'gcipdrtest', xell, x, test, rf_type)
+    .Call('_gcipdr_findzerocorr', PACKAGE = 'gcipdr', xell, x, test, rf_type)
 }
 
