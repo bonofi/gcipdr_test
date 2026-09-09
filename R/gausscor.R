@@ -34,10 +34,14 @@ First.attempt.Rx_Rz.conversion <- function(Rx, marginals,
                                            means, sds, stoch=FALSE,
                                            lows=c(-5,-5), ups=c(5,5),
                                            pNorm=NULL, K=1000, NI_tol = 1e-05,
-                                           NI_maxEval = 20)
+                                           NI_maxEval = 20,
+                                           kruskal_init = FALSE, is_pair_continuous = NULL)
 {
                                         # Rx : corr matrix of X; marginals list of marginal inverse CDFs (quantile yelders)
-    p <- length(marginals)    
+  if (kruskal_init)
+    Krx <- kruskalconv(Rx[upper.tri(Rx)])
+  
+  p <- length(marginals)    
 
     if(is.null(pNorm))
         pNorm <-rep(TRUE, p)
@@ -46,12 +50,23 @@ First.attempt.Rx_Rz.conversion <- function(Rx, marginals,
 
     J <- p*(p-1)/2 # number of separate root problems, equals dim(combos)[2]
     
-    Rut <- future.apply::future_lapply(1:J, function(j)
+    Rut <- lapply(1:J, function(j)
     {
         row <- combos[1, j]
         col <- combos[2, j]
         rxj <- Rx[row, col]
-
+        
+        if (
+          kruskal_init & 
+          ifelse(
+            !is.null(is_pair_continuous[j]),
+            is_pair_continuous[j],
+            FALSE
+            
+          )
+        )
+          rxj <- Krx[j]
+        
         g1 <- marginals[[row]]
         g2 <- marginals[[col]]
 
@@ -79,8 +94,8 @@ First.attempt.Rx_Rz.conversion <- function(Rx, marginals,
         if(sign(out)!=sign(rxj))
             warning("sign of copula pair correlation different from entry value !!!", call.=F)
         out
-    }, 
-    future.seed = TRUE)  # ← key: reproducible RNG across workers
+    }
+    )
     
     res <- make.square.matrix(unlist( Rut ), p )
     res.bool <- make.square.matrix( unlist(
@@ -103,14 +118,17 @@ Rx.to.Rz.conv <- function(Rx, marginals,
                           means, sds,
                           stoch=FALSE, lows=c(-5,-5),
                           ups=c(5,5), pNorm=NULL, K=1000,
-                          NI_tol = 1e-05, NI_maxEval = 20)
+                          NI_tol = 1e-05, NI_maxEval = 20,
+                          kruskal_init = FALSE, is_pair_continuous = NULL)
 {
     first.try <- First.attempt.Rx_Rz.conversion(Rx,
                                                 marginals,
                                                 means, sds,
                                                 stoch, lows,
                                                 ups, pNorm, K,
-                                                NI_tol, NI_maxEval
+                                                NI_tol, NI_maxEval,
+                                                kruskal_init,
+                                                is_pair_continuous
                                                 )
     if ( is.SPD.matrix(first.try$matrix) )
         return(first.try$matrix)
@@ -131,7 +149,8 @@ convertRx <- function(Rx, marginals=NULL,
                       means=NULL, sds=NULL, stoch=FALSE, 
                       lows=c(-5,-5), ups=c(5,5),
                       pNorm=NULL, corrtype=c("moment", "rank"),
-                      K=1000, NI_tol = 1e-05, NI_maxEval = 20)
+                      K=1000, NI_tol = 1e-05, NI_maxEval = 20,
+                      kruskal_init = FALSE, is_pair_continuous = NULL)
 {
     corrtype <- match.arg(corrtype)
 
@@ -143,7 +162,9 @@ convertRx <- function(Rx, marginals=NULL,
                                        mc.stoch,
                                        lows, ups,
                                        pNorm, K,
-                                       NI_tol, NI_maxEval
+                                       NI_tol, NI_maxEval,
+                                       kruskal_init, 
+                                       is_pair_continuous
                                        ),                                        # also use mom in case rank need numerical search ...**
                  rank= kruskalconv(Rx)
                  )

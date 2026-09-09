@@ -13,22 +13,6 @@ library(remotes)
 
 pak::pak("bonorico/gcipdr")
 
-##### chnaging session might disrupt path to Rtools
-Sys.setenv(PATH = paste(
-  "C:/RBuildTools/4.4/usr/bin",
-  "C:/RBuildTools/4.4/x86_64-w64-mingw32.static.posix/bin",
-  Sys.getenv("PATH"),
-  sep = ";"
-))
-
-# Verify make is found
-Sys.which("make")
-Sys.which("gcc")
-
-Rcpp::compileAttributes()
-devtools::load_all()
-
-install_github("bonofi/gcipdr_test", ref="optimization_parallel")
 
 library(gcipdr)
 library(gcipdrtest)
@@ -164,3 +148,24 @@ boxplot(res, names = c("sequential", "parallel 4"))
 
 # Reset
 plan(sequential)
+
+
+############# small test is binary
+
+is.binary2 <- function(x) all(x %in% c(0,1))
+
+res <- microbenchmark(
+  {
+    set.seed(364)
+    is.binary2(rbinom(1000, 1, 0.5))
+  },
+  {
+    set.seed(364)
+    gcipdr::is.binary(rbinom(1000, 1, 0.5))
+  },
+  times = 1000L,
+  check = "equal"
+)
+
+print(res)
+

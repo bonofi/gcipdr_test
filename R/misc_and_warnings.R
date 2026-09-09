@@ -47,6 +47,26 @@ is.binary <- function(x, tol = .Machine$double.eps^0.5)
 
 }  
 
+# check if both variables in a pair are both continuous
+# result: boolean vector ordered as the upper-triangle 
+# correlation matrix of dat input
+# 
+
+is_pair_continuous <- function(dat){
+  
+  p <- dim(dat)[2]
+  combos <- combn(p, 2)
+  apply(
+    combos, 2,
+    \(x) !all(
+      c(
+        is.binary(x[1]),
+        is.binary(x[2])
+      )
+      
+    )
+  )
+}
 
 
 reldist <- function(mean, true, range)
