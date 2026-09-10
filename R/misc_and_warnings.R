@@ -43,29 +43,44 @@ is.binary <- function(x, tol = .Machine$double.eps^0.5)
 {
                                         # check if var is binary
     x <- na.omit(x)
-    all( abs(x - round(x)) < tol & x >= 0 & x <= 1  )
-
+    #all( abs(x - round(x)) < tol & x >= 0 & x <= 1  )
+    all(x %in% c(0,1))
 }  
 
 # check if both variables in a pair are both continuous
-# result: boolean vector ordered as the upper-triangle 
-# correlation matrix of dat input
-# 
-
+# result: correlation matrix where all-continuous pairs have
+# Kruskal analytic solution 
+# kruskal_init_matrix
 is_pair_continuous <- function(dat){
   
   p <- dim(dat)[2]
   combos <- combn(p, 2)
-  apply(
+  is_pair_cont <- apply(
     combos, 2,
-    \(x) !all(
+    \(x) !any(
       c(
-        is.binary(x[1]),
-        is.binary(x[2])
+        is.binary(dat[, x[1]]),
+        is.binary(dat[, x[2]])
       )
       
     )
   )
+  
+  # indicator for binary variable presence
+  I <- make.square.matrix(is_pair_cont, p)
+  Rx <- momcor(dat)
+  Kx <- kruskalconv(
+    rankcor(dat)
+  ) 
+   
+  # return matrix mixture of moment and Kruskal correlations
+  
+  out <- (1-I)*Rx + Kx*I 
+  
+  # flag all-continuous pairs as attribute
+  attributes(out)$is_cont_flag <- I
+  
+  return(out)
 }
 
 
