@@ -50,8 +50,7 @@ is.binary <- function(x, tol = .Machine$double.eps^0.5)
 # check if both variables in a pair are both continuous
 # result: correlation matrix where all-continuous pairs have
 # Kruskal analytic solution 
-# kruskal_init_matrix
-is_pair_continuous <- function(dat){
+kruskal_init_matrix <- function(dat){
   
   p <- dim(dat)[2]
   combos <- combn(p, 2)
