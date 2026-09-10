@@ -35,11 +35,12 @@ First.attempt.Rx_Rz.conversion <- function(Rx, marginals,
                                            lows=c(-5,-5), ups=c(5,5),
                                            pNorm=NULL, K=1000, NI_tol = 1e-05,
                                            NI_maxEval = 20,
-                                           kruskal_init = FALSE, is_pair_continuous = NULL)
+                                           kruskal_init = FALSE, kruskal_use = FALSE,
+                                           kruskal_init_matrix = NULL)
 {
                                         # Rx : corr matrix of X; marginals list of marginal inverse CDFs (quantile yelders)
   if (kruskal_init)
-    Krx <- kruskalconv(Rx[upper.tri(Rx)])
+    Rx <- kruskal_init_matrix
   
   p <- length(marginals)    
 
@@ -55,17 +56,6 @@ First.attempt.Rx_Rz.conversion <- function(Rx, marginals,
         row <- combos[1, j]
         col <- combos[2, j]
         rxj <- Rx[row, col]
-        
-        if (
-          kruskal_init & 
-          ifelse(
-            !is.null(is_pair_continuous[j]),
-            is_pair_continuous[j],
-            FALSE
-            
-          )
-        )
-          rxj <- Krx[j]
         
         g1 <- marginals[[row]]
         g2 <- marginals[[col]]
@@ -119,18 +109,21 @@ Rx.to.Rz.conv <- function(Rx, marginals,
                           stoch=FALSE, lows=c(-5,-5),
                           ups=c(5,5), pNorm=NULL, K=1000,
                           NI_tol = 1e-05, NI_maxEval = 20,
-                          kruskal_init = FALSE, is_pair_continuous = NULL)
+                          kruskal_init = FALSE, kruskal_use = FALSE,
+                          kruskal_init_matrix = NULL)
 {
-    first.try <- First.attempt.Rx_Rz.conversion(Rx,
-                                                marginals,
-                                                means, sds,
-                                                stoch, lows,
-                                                ups, pNorm, K,
-                                                NI_tol, NI_maxEval,
-                                                kruskal_init,
-                                                is_pair_continuous
-                                                )
-    if ( is.SPD.matrix(first.try$matrix) )
+  first.try <- First.attempt.Rx_Rz.conversion(
+    Rx,
+    marginals,
+    means, sds,
+    stoch, lows,
+    ups, pNorm, K,
+    NI_tol, NI_maxEval,
+    kruskal_init,
+    kruskal_use,
+    kruskal_init_matrix
+  )
+  if ( is.SPD.matrix(first.try$matrix) )
         return(first.try$matrix)
     else
         res <- make.matrix.SPD( first.try$matrix, first.try$flag)
@@ -150,22 +143,25 @@ convertRx <- function(Rx, marginals=NULL,
                       lows=c(-5,-5), ups=c(5,5),
                       pNorm=NULL, corrtype=c("moment", "rank"),
                       K=1000, NI_tol = 1e-05, NI_maxEval = 20,
-                      kruskal_init = FALSE, is_pair_continuous = NULL)
+                      kruskal_init = FALSE, kruskal_use = FALSE,
+                      kruskal_init_matrix = NULL)
 {
     corrtype <- match.arg(corrtype)
-
+    
     mc.stoch <- stoch & corrtype=="moment"
     Rz <- switch(corrtype,
-                 moment= Rx.to.Rz.conv(Rx,
-                                       marginals,
-                                       means, sds,
-                                       mc.stoch,
-                                       lows, ups,
-                                       pNorm, K,
-                                       NI_tol, NI_maxEval,
-                                       kruskal_init, 
-                                       is_pair_continuous
-                                       ),                                        # also use mom in case rank need numerical search ...**
+                 moment= Rx.to.Rz.conv(
+                   Rx,
+                   marginals,
+                   means, sds,
+                   mc.stoch,
+                   lows, ups,
+                   pNorm, K,
+                   NI_tol, NI_maxEval,
+                   kruskal_init,
+                   kruskal_use,
+                   kruskal_init_matrix
+                 ),                                        # also use mom in case rank need numerical search ...**
                  rank= kruskalconv(Rx)
                  )
     Rz

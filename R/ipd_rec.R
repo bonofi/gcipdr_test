@@ -226,7 +226,7 @@ Return.key.IPD.summaries <- function( md,
     rownames(Rx) <- colnames(Rx) <- variable.names # adding names to corr pairs
     # flags if variables pair in upper Rx are both continuous for 
     # Kruskal initialization in NORTA search (or NORTA replacement)
-    cont_pairs_flag <- is_pair_continuous(md[,-1])
+    kruskal_init_mat <- kruskal_init_matrix(md[,-1])
     
     out <- list(sample.size = n ,
                 is.sample.size.complete = is.data.missing , # if NAs are kept, sample size includes all records (is complete)
@@ -236,7 +236,7 @@ Return.key.IPD.summaries <- function( md,
                 model.sufficient.statistics = mirs, # model-induced data reduction, X'y term in GLM and Cox models
                 johnson.parameters = jsp , # solution to Johnson system
                 is.binary.variable = x.mode,  # boolean (is variable binary or continuous ? )
-                is_continuous_pair = cont_pairs_flag # boolean (is pair all continuous?)
+                kruskal_init_matrix = kruskal_init_mat # matrix (mixed correlations for continuous-continuous and continuous-binary pairs)
                 )
     class(out) <- "key.ipd.summary"
     return( out )
@@ -610,7 +610,8 @@ NORTAconvert.correlation.matrix <- function(correlation.matrix , marginal.invers
                                             yes.normal.percentile,
                                             corr.type=c("rank.corr", "moment.corr", "normal.corr"),
                                             SI_k = 8000, NI_tol = 1e-05, NI_maxEval = 20,
-                                            kruskal_init = FALSE, is_pair_continuous = NULL)
+                                            kruskal_init = FALSE, kruskal_use = FALSE, 
+                                            kruskal_init_matrix = NULL)
 {
     corr.type <- match.arg(corr.type)
     if (corr.type == "normal.corr")
@@ -640,7 +641,8 @@ NORTAconvert.correlation.matrix <- function(correlation.matrix , marginal.invers
                     NI_tol = NI_tol,
                     NI_maxEval = NI_maxEval,
                     kruskal_init = kruskal_init, 
-                    is_pair_continuous = is_pair_continuous
+                    kruskal_use = kruskal_use,
+                    kruskal_init_matrix = kruskal_init_matrix
                   )  # TODO(me): set K as formal argument or tweak here ....
                 },
               "rank.corr" =  convertRx( correlation.matrix , corrtype="rank")  )
@@ -705,7 +707,7 @@ norta.method <- function( simulation.size, sample.size, correlation.matrix,
                          marginal.inverse.distributions, variable.names,
                          corr.type=c("rank.corr", "moment.corr", "normal.corr"),
                          SI_k = 8000, NI_tol = 1e-05, NI_maxEval = 20, input.sn.corr = NULL, 
-                         kruskal_init = FALSE, is_pair_continuous = NULL)
+                         kruskal_init = FALSE, kruskal_use = FALSE, kruskal_init_matrix = NULL)
 {
     corr.type <- match.arg(corr.type)
     if ( any( eigen(correlation.matrix, T,T)$values < 0 )  )   # empirically observed correlation matrix
@@ -728,7 +730,7 @@ norta.method <- function( simulation.size, sample.size, correlation.matrix,
               stochastic.integration,
               yes.normal.percentile,
               corr.type, SI_k, NI_tol, NI_maxEval,
-              kruskal_init, is_pair_continuous
+              kruskal_init, kruskal_use, kruskal_init_matrix
             )
     }
     else
@@ -756,7 +758,8 @@ Generate.with.Complete.correlation <- function(H, n, correlation.matrix, moments
                                                marg.model=c("gamma", "johnson"),
                                                SI_k = 8000, NI_tol = 1e-05, NI_maxEval = 20,
                                                input.sn.corr = NULL, rescale.smoothed.binary = FALSE,
-                                               kruskal_init = FALSE, is_pair_continuous = NULL)
+                                               kruskal_init = FALSE, kruskal_use = FALSE, 
+                                               kruskal_init_matrix = NULL)
 {
     corrtype <- match.arg(corrtype)
     marg.model <- match.arg(marg.model)
@@ -790,7 +793,7 @@ Generate.with.Complete.correlation <- function(H, n, correlation.matrix, moments
                         stochastic.integration, norm.perc,
                         marginals, variable.names,
                         corrtype, SI_k, NI_tol, NI_maxEval, input.sn.corr,
-                        kruskal_init, is_pair_continuous
+                        kruskal_init, kruskal_use, kruskal_init_matrix
                         )
     if ( ( corrtype == "rank.corr" & any(x.mode) & rescale.smoothed.binary ) ) # convert smoothed binary to integer bits
         res$copula.inverse <- lapply(res$copula.inverse, function(x)
@@ -849,8 +852,8 @@ Generate.with.Complete.correlation <- function(H, n, correlation.matrix, moments
 #'
 #'@param assume.all.smooth logical. If NORTA method is used, it pretends an input Pearson correlation matrix is already a valid Kruskal solution, which falsely assumes all variables are continuous, when some are actually discrete. This is biased but it can yield quick (fine-tunable -- see 'cp.finetune'). Default FALSE.
 #' @param kruskal_init boolean. Should Kruskal correlation be used to initialize Newton_Raphson search of correlation in standard Normal space? Note, Kruskal is actually the analytic solution for this search if both variables in pair are continuous. Default FALSE.
-#' @param is_pair_continuous boolean vector of length p*(p-1)/2 with p = Nr. of IPD variables. It returns if all variables in the pair are continuous or not. The pairs order reflects that of the upper-triangle correlation matrix of the IPD or 'combn(p, 2)'.  
-#' @param kruskal_use booolean. Use analytic Kruskal solution ofr correlation in SN space if both variables in a pair are continuous. #' This avoids running the more expensive Newton-Raphson search for that pair. Default = FALSE.
+#' @param kruskal_use boolean. Use analytic Kruskal solution ofr correlation in SN space if both variables in a pair are continuous. #' This avoids running the more expensive Newton-Raphson search for that pair. Default = FALSE.
+#' @param kruskal_init_matrix matrix. Correlation matrix with mixed entries for continuous-continous pairs (Kruskal analytic solution for SN space) or continuous-binary (Pearson correlation). It will be used to either use kruskal values as init in Newton-Raphson search (kruskal_init) or by-pass it entirely by forwarding the kruskal values to the SN space solution (kruskal_use) 
 #' @return An object of class 'similar.data'. Default NULL.
 #'
 #' @details `DataRebuild()` is based on a Gaussian Copula inversion technique also known as NORmal To Anything (NORTA) transformation. Inversion occurs upon conversion of an input empirical matrix into standard normal space (copula parameter solution). If data.rearrange = "norta", conversion (optimization) expects a Pearson correlation matrix as input (corrtype = "moment.corr" is chosen automatically default). Using "norta" and "rank.corr" performs Kruskal analytic conversion (theoretically valid if all marginals are continous), whereas "normal.corr" simply returns the input matrix as it is. If optimization fails with numerical integration (default), try stochastic integration (stochastic.integration = TRUE) instead. 
@@ -881,8 +884,9 @@ DataRebuild <- function(H, n, correlation.matrix, moments, x.mode, johnson.param
                         input.sn.corr = NULL, cp.finetune = FALSE,
                         rescale.smoothed.binary = FALSE, assume.all.smooth = FALSE,
                         kruskal_init = FALSE,
-                        is_pair_continuous = NULL,
-                        kruskal_use = FALSE)
+                        kruskal_use = FALSE,
+                        kruskal_init_matrix = NULL
+                        )
 {
     data.rearrange <- match.arg(data.rearrange)
     corrtype <- match.arg(corrtype)
@@ -922,7 +926,7 @@ DataRebuild <- function(H, n, correlation.matrix, moments, x.mode, johnson.param
                                                               x.mode, variable.names, SBjohn.correction,
                                                               corrtype, marg.model, SI_k, NI_tol, NI_maxEval,
                                                               input.sn.corr, rescale.smoothed.binary,
-                                                              kruskal_init, is_pair_continuous
+                                                              kruskal_init, kruskal_use, kruskal_init_matrix
                                                               )
                     )
     rkcbool <- (cp.finetune & corrtype == "rank.corr" & any(x.mode) & rescale.smoothed.binary & data.rearrange == "norta")
@@ -1153,7 +1157,8 @@ Simulate.data.given.IPD <- function(data, H = NULL, method, fill.missing = FALSE
                                     tabulate.similar.data =  FALSE, print.message = TRUE,
                                     set.corr.matr2null = FALSE, SI_k = 8000, NI_tol = 1e-05,
                                     NI_maxEval = 20, input.sn.corr = NULL,
-                                    kruskal_init = FALSE)
+                                    kruskal_init = FALSE,
+                                    kruskal_use = FALSE)
 {
     method.settings.combo <-  setting.comb.matrix()  # see below ..
     data.rearrange <- method.settings.combo[1 ,method]
@@ -1168,7 +1173,7 @@ Simulate.data.given.IPD <- function(data, H = NULL, method, fill.missing = FALSE
     jsp <- key.summaries$johnson.parameters
     x.mode <- key.summaries$is.binary.variable
     variable.names <- key.summaries$variable.names
-    cont_pairs <- key.summaries$is_continuous_pair
+    kruskal_init_mat <- key.summaries$kruskal_init_matrix
     if (is.null(H))
         H <- ifelse( n < 500, 300, 100)
     if (set.corr.matr2null)
@@ -1181,7 +1186,8 @@ Simulate.data.given.IPD <- function(data, H = NULL, method, fill.missing = FALSE
                                    SI_k = SI_k, NI_tol = NI_tol, NI_maxEval = NI_maxEval,
                                    input.sn.corr = input.sn.corr,
                                    kruskal_init = kruskal_init,
-                                   is_pair_continuous = cont_pairs
+                                   kruskal_use = kruskal_use,
+                                   kruskal_init_matrix = kruskal_init_mat
                                    )
     similar.data.space <- data.simulation$Xspace
     is.data.statistically.similar <- data.simulation$is.similar  # can be NA is checkdata = FALSE
