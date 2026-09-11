@@ -39,7 +39,7 @@ First.attempt.Rx_Rz.conversion <- function(Rx, marginals,
                                            kruskal_init_matrix = NULL)
 {
                                         # Rx : corr matrix of X; marginals list of marginal inverse CDFs (quantile yelders)
-  if (kruskal_init)
+  if (kruskal_init & !is.null(kruskal_init_matrix))
     Rx <- kruskal_init_matrix
   
   p <- length(marginals)    
@@ -51,7 +51,39 @@ First.attempt.Rx_Rz.conversion <- function(Rx, marginals,
 
     J <- p*(p-1)/2 # number of separate root problems, equals dim(combos)[2]
     
-    Rut <- lapply(1:J, function(j)
+    ####### implement option of using Kruskal solutions only 
+    ####### for continuous-continuous pairs and by-pass Newton-Raphson for those
+    if (kruskal_use & !is.null(kruskal_init_matrix))
+    {
+      what_use <- attributes(out)$is_cont_flag
+      if (is.null(what_use))
+        stop("kruskal_init_matrix must have an attribute 'is_cont_flag' that is 
+             a matrix having same dimension of kruskal_init_matrix and elements = 1 if the pair is continuous-continuous 
+             or 0 if is continuous-binary. Assign this attibute via 'attribute(kruskal_init_matrix)$is_cont_flag <-' ")
+      # indicator for Kruskal solution
+      notjs <- which(what_use[upper.tri(what_use)] == 1)
+      # indicator for Newton-Raphson routine
+      js <- which(what_use[upper.tri(what_use)] == 0)
+      if (length(notjs) < 1)
+        notjs <- NULL
+      if (length(js) < 1)
+        js <- NULL
+      # if notjs is NULL Krx will be void
+      Krx <- lapply(
+        kruskal_init_matrix[upper.tri(kruskal_init_matrix)][notjs],
+        \(x) { 
+          attributes(x)$adjusted <- FALSE
+          return(x)
+          }
+      )
+    } else {
+      # if kruskal_use = F, Newton-Raphson routine runs through all pairs
+      js <- 1:J
+      notjs <- Krx <- NULL
+    } 
+   #############    end kruskal_use block    
+      
+    Rut0 <- lapply(js, function(j)
     {
         row <- combos[1, j]
         col <- combos[2, j]
@@ -86,6 +118,9 @@ First.attempt.Rx_Rz.conversion <- function(Rx, marginals,
         out
     }
     )
+    
+    #### reorganize results accounting for kruskal_use option
+    Rut <- c(Rut0, Krx)[c(js, notjs)]
     
     res <- make.square.matrix(unlist( Rut ), p )
     res.bool <- make.square.matrix( unlist(
