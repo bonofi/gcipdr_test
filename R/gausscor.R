@@ -55,7 +55,7 @@ First.attempt.Rx_Rz.conversion <- function(Rx, marginals,
     ####### for continuous-continuous pairs and by-pass Newton-Raphson for those
     if (kruskal_use & !is.null(kruskal_init_matrix))
     {
-      what_use <- attributes(out)$is_cont_flag
+      what_use <- attributes(kruskal_init_matrix)$is_cont_flag
       if (is.null(what_use))
         stop("kruskal_init_matrix must have an attribute 'is_cont_flag' that is 
              a matrix having same dimension of kruskal_init_matrix and elements = 1 if the pair is continuous-continuous 
@@ -70,7 +70,7 @@ First.attempt.Rx_Rz.conversion <- function(Rx, marginals,
         js <- NULL
       # if notjs is NULL Krx will be void
       Krx <- lapply(
-        kruskal_init_matrix[upper.tri(kruskal_init_matrix)][notjs],
+        kruskal_init_matrix[lower.tri(kruskal_init_matrix)][notjs],
         \(x) { 
           attributes(x)$adjusted <- FALSE
           return(x)
@@ -82,7 +82,7 @@ First.attempt.Rx_Rz.conversion <- function(Rx, marginals,
       notjs <- Krx <- NULL
     } 
    #############    end kruskal_use block    
-      
+    
     Rut0 <- lapply(js, function(j)
     {
         row <- combos[1, j]
@@ -121,7 +121,7 @@ First.attempt.Rx_Rz.conversion <- function(Rx, marginals,
     
     #### reorganize results accounting for kruskal_use option
     Rut <- c(Rut0, Krx)[c(js, notjs)]
-    
+
     res <- make.square.matrix(unlist( Rut ), p )
     res.bool <- make.square.matrix( unlist(
         lapply(Rut, function(x)
@@ -147,6 +147,7 @@ Rx.to.Rz.conv <- function(Rx, marginals,
                           kruskal_init = FALSE, kruskal_use = FALSE,
                           kruskal_init_matrix = NULL)
 {
+
   first.try <- First.attempt.Rx_Rz.conversion(
     Rx,
     marginals,
