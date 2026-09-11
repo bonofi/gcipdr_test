@@ -23,6 +23,16 @@ library(future.apply)
 
 testdat <- mtcars[, 1:4]
 
+
+#################   TEST KRUSKAL INIT/USAGE ''''''''''''''''''''''
+#################   
+
+
+
+
+
+#################   TEST PARALLELIZATION ''''''''''''''''''''''
+#################   
 # Compare if future parallelization 
 # speeds up routine (expected x2) 
 # (commit: 407b55895dba452f6de14c0f641eb36233db9cc7)
