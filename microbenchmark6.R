@@ -97,6 +97,7 @@ res <- microbenchmark::microbenchmark(
 
 
 ### check speed advantage if including two binary variables
+### issues with corr matrix ....debug
 
 res <- microbenchmark::microbenchmark(
   {
@@ -128,6 +129,7 @@ res <- microbenchmark::microbenchmark(
 print(res)
 boxplot(res, names = c("gcipdr", "gcipdrtest"))
 
+
 ## check normal correlation
 
 res <- microbenchmark::microbenchmark(
@@ -151,10 +153,10 @@ res <- microbenchmark::microbenchmark(
         ) |> 
         select(c(1, 2, 5, 3, 4)), 
       H=5, stochastic.integration = TRUE, 
-      SI_k = 50000, method = 3, 
+      SI_k = 50000, method = 9, 
       checkdata = TRUE, tabulate.similar.data = TRUE)
   },
-  times = 30
+  times = 10
 )
 
 
