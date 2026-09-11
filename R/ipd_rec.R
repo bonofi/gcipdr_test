@@ -1314,7 +1314,10 @@ setting.comb.matrix <- function()
         c( "incomplete", "gamma", "moment.corr" ),
         c( "incomplete", "johnson", "moment.corr" ),
         c( "norta", "gamma", "rank.corr" ),
-        c( "norta", "johnson", "rank.corr" ) ),
+        c( "norta", "johnson", "rank.corr" ),
+        c("norta", "gamma", "normal.corr"),
+        c("norta", "johnson", "normal.corr")
+        ),
         nrow = 3
         )   # eight combination for data simulation: create varaible 'simulation type: approach.1, approach.2, ...' DONE in bias.looped
 
