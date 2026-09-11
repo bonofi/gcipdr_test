@@ -10,6 +10,7 @@ unlink(pkgFile)
 
 library(microbenchmark)
 library(remotes)
+library(tidyverse)
 
 pak::pak("bonorico/gcipdr")
 
@@ -27,6 +28,134 @@ testdat <- mtcars[, 1:4]
 #################   TEST KRUSKAL INIT/USAGE ''''''''''''''''''''''
 #################   
 
+# check equal
+res <- microbenchmark::microbenchmark(
+  {
+    set.seed(608, "L'Ecuyer")
+    gcipdr::Simulate.data.given.IPD(testdat, H=5, stochastic.integration = TRUE, 
+                                    SI_k = 50000, method = 3)},
+  {
+    set.seed(608, "L'Ecuyer")
+    gcipdrtest::Simulate.data.given.IPD(testdat, H=5, stochastic.integration = TRUE, 
+                                        SI_k = 50000, method = 3)},
+  times = 5,
+  check = "equal"
+)
+
+
+# check init speed: NO GAIN
+res <- microbenchmark::microbenchmark(
+  {
+    set.seed(608, "L'Ecuyer")
+    gcipdr::Simulate.data.given.IPD(testdat, H=5, stochastic.integration = TRUE, 
+                                    SI_k = 50000, method = 3)},
+  {
+    set.seed(608, "L'Ecuyer")
+    gcipdrtest::Simulate.data.given.IPD(testdat, H=5, stochastic.integration = TRUE, 
+                                        SI_k = 50000, method = 3, kruskal_init = TRUE)},
+  times = 30L
+)
+
+print(res)
+
+boxplot(res, names = c("gcipdr", "gcipdrtest"))
+
+
+
+# check kruskal check equal
+res <- microbenchmark::microbenchmark(
+  {
+    set.seed(608, "L'Ecuyer")
+    gcipdr::Simulate.data.given.IPD(testdat, H=5, stochastic.integration = TRUE, 
+                                    SI_k = 50000, method = 7, 
+                                    checkdata = TRUE, tabulate.similar.data = TRUE)},
+  {
+    set.seed(608, "L'Ecuyer")
+    gcipdrtest::Simulate.data.given.IPD(testdat, H=5, stochastic.integration = TRUE, 
+                                        SI_k = 50000, method = 3, kruskal_use = TRUE,
+                                        checkdata = TRUE, tabulate.similar.data = TRUE)
+    },
+  times = 5,
+  check = \(x) {
+
+    A <- x[[1]]$similar.data |> 
+      map(\(df) df |> 
+            as.data.frame()) |> 
+      bind_rows()
+    B <- x[[2]]$similar.data |> 
+      map(\(df) df |> 
+            as.data.frame()) |> 
+      bind_rows()
+    
+    all(
+      as.vector(as.matrix(A) - as.matrix(B)) |> 
+        round(10) == 0
+      )
+  }
+)
+
+
+
+### check speed advantage if including two binary variables
+
+res <- microbenchmark::microbenchmark(
+  {
+    set.seed(608, "L'Ecuyer")
+    gcipdr::Simulate.data.given.IPD(
+      testdat |> 
+        mutate(
+          bin1 = rbinom(dim(testdat)[1], 1, 0.5)
+        ) |> 
+        select(c(1, 2, 5, 3)), 
+      H=5, stochastic.integration = TRUE, 
+      SI_k = 50000, method = 3, 
+      checkdata = TRUE, tabulate.similar.data = TRUE)},
+  {
+    set.seed(608, "L'Ecuyer")
+    gcipdrtest::Simulate.data.given.IPD(
+      testdat |> 
+        mutate(
+          bin1 = rbinom(dim(testdat)[1], 1, 0.5)
+        ) |> 
+        select(c(1, 2, 5, 3)), 
+      H=5, stochastic.integration = TRUE, 
+      SI_k = 50000, method = 3, kruskal_use = TRUE,
+      checkdata = TRUE, tabulate.similar.data = TRUE)
+  },
+  times = 30
+)
+
+print(res)
+boxplot(res, names = c("gcipdr", "gcipdrtest"))
+
+## check normal correlation
+
+res <- microbenchmark::microbenchmark(
+  {
+    set.seed(608, "L'Ecuyer")
+    gcipdr::Simulate.data.given.IPD(
+      testdat |> 
+        mutate(
+          bin1 = rbinom(dim(testdat)[1], 1, 0.5)
+        ) |> 
+        select(c(1, 2, 5, 3, 4)), 
+      H=5, stochastic.integration = TRUE, 
+      SI_k = 50000, method = 3, 
+      checkdata = TRUE, tabulate.similar.data = TRUE)},
+  {
+    set.seed(608, "L'Ecuyer")
+    gcipdrtest::Simulate.data.given.IPD(
+      testdat |> 
+        mutate(
+          bin1 = rbinom(dim(testdat)[1], 1, 0.5)
+        ) |> 
+        select(c(1, 2, 5, 3, 4)), 
+      H=5, stochastic.integration = TRUE, 
+      SI_k = 50000, method = 3, 
+      checkdata = TRUE, tabulate.similar.data = TRUE)
+  },
+  times = 30
+)
 
 
 
