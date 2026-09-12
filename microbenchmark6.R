@@ -16,7 +16,6 @@ pak::pak("bonorico/gcipdr")
 
 
 library(gcipdr)
-library(gcipdrtest)
 library(future)
 library(future.apply)
 
@@ -62,7 +61,7 @@ boxplot(res, names = c("gcipdr", "gcipdrtest"))
 
 
 
-# check kruskal check equal
+# check kruskal check equal: PASS
 res <- microbenchmark::microbenchmark(
   {
     set.seed(608, "L'Ecuyer")
