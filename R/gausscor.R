@@ -61,9 +61,9 @@ First.attempt.Rx_Rz.conversion <- function(Rx, marginals,
              a matrix having same dimension of kruskal_init_matrix and elements = 1 if the pair is continuous-continuous 
              or 0 if is continuous-binary. Assign this attibute via 'attribute(kruskal_init_matrix)$is_cont_flag <-' ")
       # indicator for Kruskal solution
-      notjs <- which(what_use[upper.tri(what_use)] == 1)
+      notjs <- which(what_use[lower.tri(what_use)] == 1)
       # indicator for Newton-Raphson routine
-      js <- which(what_use[upper.tri(what_use)] == 0)
+      js <- which(what_use[lower.tri(what_use)] == 0)
       if (length(notjs) < 1)
         notjs <- NULL
       if (length(js) < 1)
@@ -120,8 +120,8 @@ First.attempt.Rx_Rz.conversion <- function(Rx, marginals,
     )
     
     #### reorganize results accounting for kruskal_use option
-    Rut <- c(Rut0, Krx)[c(js, notjs)]
-
+    Rut <- c(Rut0, Krx)[(1:J)[c(js, notjs)]]
+browser()
     res <- make.square.matrix(unlist( Rut ), p )
     res.bool <- make.square.matrix( unlist(
         lapply(Rut, function(x)
