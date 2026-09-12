@@ -118,10 +118,11 @@ First.attempt.Rx_Rz.conversion <- function(Rx, marginals,
         out
     }
     )
-    
+    Rut <- vector("list", J)
     #### reorganize results accounting for kruskal_use option
-    Rut <- c(Rut0, Krx)[(1:J)[c(js, notjs)]]
-browser()
+    Rut[js] <- Rut0
+    Rut[notjs] <- Krx
+
     res <- make.square.matrix(unlist( Rut ), p )
     res.bool <- make.square.matrix( unlist(
         lapply(Rut, function(x)
