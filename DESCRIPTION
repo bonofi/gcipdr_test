@@ -5,11 +5,11 @@ Version: 0.0
 Date: 2018-10-05
 Author: Federico Bonofiglio
 Maintainer: Federico Bonofiglio <bono@imbi.uni-freiburg.de>
-Depends: R (>= 3.3.3), JohnsonDistribution, moments, parallel, cubature, mvtnorm, ggplot2
+Depends: R (>= 3.3.3), JohnsonDistribution, moments, parallel, cubature, mvtnorm, ggplot2, psych
 Suggests: lme4
 Description: The proposed Gaussian Copula technique generates pseudodata replacing IPD, using simple summaries, like IPD empirical marginal moments and correlation matrix, as only input data. In contexts where IPD is not available, pseudodata is a mean to compute approximate IPD inferences. The approach has applications in statistical disclosure control, distributed computing (e.g. see DataShield -- see https://cran.datashield.org/), and, ideally research synthesis or reproduction.
 License: GPL (>= 3) 
 URL: https://github.com/bonorico/gcipdr
 Imports: Rcpp (>= 0.12.14)
 LinkingTo: Rcpp, RcppArmadillo
-RoxygenNote: 6.1.0
+RoxygenNote: 7.3.3

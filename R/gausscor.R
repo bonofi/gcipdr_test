@@ -704,7 +704,7 @@ make.matrix.SPD <- function( mat, flag )
         if ( is.SPD.matrix(mat) )  # TODO(me) : is missing the case where mat is flaged but not flagged elements need also be tweaked ...
             return(mat)
         else
-            res <- make.matrix.SPD.if.NOT.flagged( mat[lower.tri(mat)], p )  # feed lower trinagular only
+            res <- make.matrix.SPD.if.NOT.flagged( mat[lower.tri(mat)], p )  # feed lower triangular only
     }
     return(res)
 }

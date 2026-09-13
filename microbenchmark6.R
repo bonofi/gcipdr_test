@@ -106,7 +106,7 @@ res <- microbenchmark::microbenchmark(
         mutate(
           bin1 = rbinom(dim(testdat)[1], 1, 0.5)
         ) |> 
-        select(c(1, 2, 5, 3)), 
+        select(c(1, 2, 5, 3, 4)), 
       H=5, stochastic.integration = TRUE, 
       SI_k = 50000, method = 3, 
       checkdata = TRUE, tabulate.similar.data = TRUE)},
@@ -117,7 +117,7 @@ res <- microbenchmark::microbenchmark(
         mutate(
           bin1 = rbinom(dim(testdat)[1], 1, 0.5)
         ) |> 
-        select(c(1, 2, 5, 3)), 
+        select(c(1, 2, 5, 3, 4)), 
       H=5, stochastic.integration = TRUE, 
       SI_k = 50000, method = 3, kruskal_use = TRUE,
       checkdata = TRUE, tabulate.similar.data = TRUE)
@@ -158,6 +158,22 @@ res <- microbenchmark::microbenchmark(
   times = 10
 )
 
+
+### check analytic mixed-corr
+### 
+
+set.seed(608, "L'Ecuyer")
+mixedat <-   testdat |> 
+  mutate(
+    bin1 = rbinom(dim(testdat)[1], 1, 0.5)
+  ) |> 
+  select(c(1, 2, 5, 3, 4))
+
+new <- gcipdrtest::Simulate.data.given.IPD(
+  mixedat, 
+  H=5, stochastic.integration = TRUE, 
+  SI_k = 50000, method = 3, input.sn.corr = mixed_corr(mixedat),
+  checkdata = TRUE, tabulate.similar.data = TRUE)
 
 
 

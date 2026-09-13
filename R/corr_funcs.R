@@ -215,8 +215,32 @@ waerdencor <- function(X, y = NULL,
 
 
 
+# mixed correlations in SN    
+mixed_corr <- function(dat){
     
-
+    N <- dim(dat)[1]
+    wherenot <- apply(dat, 2, is.binary)
+    cont <- which(!wherenot)
+    
+    dat[, cont] <- apply(
+        dat[, cont], 2, 
+        \(x) {
+            # normal-ranks
+            r_cont <- rank(x)
+            qnorm(r_cont / (N + 1))
+        }
+    )
+    
+    mixed_matrix <- psych::mixedCor(
+        dat, 
+        c=cont, 
+        d=which(wherenot)
+    )
+    
+    return(
+        mixed_matrix$rho)
+    
+}
 
 
 
