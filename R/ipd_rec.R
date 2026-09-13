@@ -648,8 +648,9 @@ NORTAconvert.correlation.matrix <- function(correlation.matrix , marginal.invers
               "rank.corr" =  convertRx( correlation.matrix , corrtype="rank")  )
         else
           correlation.in.standard.normal.space <- diag(nrow = K)  # Rz
-        if ( any( eigen(correlation.in.standard.normal.space, T,T)$values < 0 )  )
-            stop("solution to the NORTA problem is not definite semipositive ")
+        # CHANGE 13.09.2026 DEACTIVATING SPD check here to introduce single gate in norta.method
+        # if ( any( eigen(correlation.in.standard.normal.space, T,T)$values < 0 )  )
+        #     stop("solution to the NORTA problem is not definite semipositive ")
         return(correlation.in.standard.normal.space)
     }
      
@@ -734,7 +735,22 @@ norta.method <- function( simulation.size, sample.size, correlation.matrix,
             )
     }
     else
-        correlation.in.standard.normal.space <- input.sn.corr # adding option to externally tweak copula paramenter
+        correlation.in.standard.normal.space <- input.sn.corr # adding option to externally tweak copula parameter
+    
+    ############ single SPD check 13.09.2026 ######################
+    if ( any( eigen(correlation.in.standard.normal.space, T,T)$values < 0 )  ){
+      # ENFORCE POSITIVE DEFINITENESS (Higham's Alternating Projections Method)
+      # Hybrid matrices frequently yield negative eigenvalues; nearPD fixes this safely
+      correlation.in.standard.normal.space <- as.matrix(
+        Matrix::nearPD(
+          correlation.in.standard.normal.space, 
+          corr = TRUE)$mat
+        )
+      # second check
+      if ( any( eigen(correlation.in.standard.normal.space, T,T)$values < 0 )  )
+        stop("solution to the NORTA problem is not definite semipositive ")
+    }
+    ############ 
                                         #
     rownames(correlation.in.standard.normal.space) <- colnames(correlation.in.standard.normal.space) <- variable.names
     U <- chol(correlation.in.standard.normal.space)  # Cholesky decomposition
