@@ -36,7 +36,8 @@ First.attempt.Rx_Rz.conversion <- function(Rx, marginals,
                                            pNorm=NULL, K=1000, NI_tol = 1e-05,
                                            NI_maxEval = 20,
                                            kruskal_init = FALSE, kruskal_use = FALSE,
-                                           kruskal_init_matrix = NULL)
+                                           kruskal_init_matrix = NULL,
+                                           newtrap_parallel = FALSE)
 {
                                         # Rx : corr matrix of X; marginals list of marginal inverse CDFs (quantile yelders)
   if (kruskal_init & !is.null(kruskal_init_matrix))
@@ -83,7 +84,7 @@ First.attempt.Rx_Rz.conversion <- function(Rx, marginals,
     } 
    #############    end kruskal_use block    
     
-    Rut0 <- lapply(js, function(j)
+    pair_search <- function(j)
     {
         row <- combos[1, j]
         col <- combos[2, j]
@@ -117,7 +118,19 @@ First.attempt.Rx_Rz.conversion <- function(Rx, marginals,
             warning("sign of copula pair correlation different from entry value !!!", call.=F)
         out
     }
-    )
+    
+    
+    # ── Sequential vs parallel dispatch ─────────────────────────────
+    # Sequential: plain lapply, byte-for-byte identical to original algorithm
+    # Parallel: future_lapply with seed management for cross-worker reproducibility
+    if (!newtrap_parallel)
+      Rut0 <- lapply(js, pair_search)
+    else
+      Rut0 <- future.apply::future_lapply(
+        js, 
+        pair_search, 
+        future.seed = TRUE)
+    
     Rut <- vector("list", J)
     #### reorganize results accounting for kruskal_use option
     Rut[js] <- Rut0
@@ -146,7 +159,8 @@ Rx.to.Rz.conv <- function(Rx, marginals,
                           ups=c(5,5), pNorm=NULL, K=1000,
                           NI_tol = 1e-05, NI_maxEval = 20,
                           kruskal_init = FALSE, kruskal_use = FALSE,
-                          kruskal_init_matrix = NULL)
+                          kruskal_init_matrix = NULL,
+                          newtrap_parallel = FALSE)
 {
 
   first.try <- First.attempt.Rx_Rz.conversion(
@@ -158,7 +172,8 @@ Rx.to.Rz.conv <- function(Rx, marginals,
     NI_tol, NI_maxEval,
     kruskal_init,
     kruskal_use,
-    kruskal_init_matrix
+    kruskal_init_matrix,
+    newtrap_parallel
   )
   if ( is.SPD.matrix(first.try$matrix) )
         return(first.try$matrix)
@@ -181,7 +196,8 @@ convertRx <- function(Rx, marginals=NULL,
                       pNorm=NULL, corrtype=c("moment", "rank"),
                       K=1000, NI_tol = 1e-05, NI_maxEval = 20,
                       kruskal_init = FALSE, kruskal_use = FALSE,
-                      kruskal_init_matrix = NULL)
+                      kruskal_init_matrix = NULL,
+                      newtrap_parallel = FALSE)
 {
     corrtype <- match.arg(corrtype)
     
@@ -197,7 +213,8 @@ convertRx <- function(Rx, marginals=NULL,
                    NI_tol, NI_maxEval,
                    kruskal_init,
                    kruskal_use,
-                   kruskal_init_matrix
+                   kruskal_init_matrix,
+                   newtrap_parallel
                  ),                                        # also use mom in case rank need numerical search ...**
                  rank= kruskalconv(Rx)
                  )
