@@ -4,21 +4,41 @@
 \alias{DataRebuild}
 \title{IPD reconstruction from IPD summaries only.}
 \usage{
-DataRebuild(H, n, correlation.matrix, moments, x.mode,
-  johnson.parameters = NULL, stochastic.integration = FALSE,
-  data.rearrange = c("incomplete", "norta"), corrtype = c("rank.corr",
-  "moment.corr", "normal.corr"), marg.model = c("gamma", "johnson"),
-  variable.names = NULL, SBjohn.correction = F, compute.eec = F,
-  checkdata = F, tabulate.similar.data = FALSE,
-  SI_k = 8000, input.sn.corr = NULL)
-
+DataRebuild(
+  H,
+  n,
+  correlation.matrix,
+  moments,
+  x.mode,
+  johnson.parameters = NULL,
+  stochastic.integration = FALSE,
+  data.rearrange = c("norta", "incomplete"),
+  corrtype = c("moment.corr", "rank.corr", "normal.corr"),
+  marg.model = c("gamma", "johnson"),
+  variable.names = NULL,
+  SBjohn.correction = FALSE,
+  compute.eec = FALSE,
+  checkdata = FALSE,
+  tabulate.similar.data = FALSE,
+  SI_k = 8000,
+  NI_tol = 0.01,
+  NI_maxEval = 500,
+  input.sn.corr = NULL,
+  cp.finetune = FALSE,
+  rescale.smoothed.binary = FALSE,
+  assume.all.smooth = FALSE,
+  kruskal_init = FALSE,
+  kruskal_use = FALSE,
+  kruskal_init_matrix = NULL,
+  newtrap_parallel = FALSE
+)
 }
 \arguments{
 \item{H}{integer number of independent IPD replicates to be generated.}
 
 \item{n}{integer number of independent IPD records. Ex: number of rows (subjects) in original IPD.}
 
-\item{correlation.matrix}{pairwise IPD correlations values.}
+\item{correlation.matrix}{pairwise IPD correlation matrix.}
 
 \item{moments}{numeric array of IPD marginal moments up to fourth degree for all IPD variables (columns).}
 
@@ -30,17 +50,13 @@ DataRebuild(H, n, correlation.matrix, moments, x.mode,
 
 \item{data.rearrange}{method of IPD dependence reconstruction based on all pairwise IPD correlations (norta), or on first degree correlations only (incomplete).}
 
-\item{corrtype}{what type of IPD correlation matrix are you feeding in ?
-  Spearman (rank.corr), Pearson (moment.corr), or Waerden
-  (normal.corr). see Details}
+\item{corrtype}{what type of IPD correlation matrix are you feeding in ? Spearman (rank.corr), Pearson (moment.corr), or Waerden (normal.corr). see Deatails.}
 
 \item{marg.model}{either "gamma" or "johnson" for modeling of non-binary IPD marginal. All binary marginals are modeled via a Bernoulli distribution, or a Beta distribution if Kruskal analytic conversion is used (see below).}
 
 \item{variable.names}{names of IPD marginal variables. If NULL (Default) automatic labels are generated.}
 
-\item{SBjohn.correction}{logical. Should be Johnson marginal values
-  corrected ? Default to FALSE. If TRUE, wrongly sampled negative values
- are set to the minimum positive sampled value. }
+\item{SBjohn.correction}{logical. Should be Johnson marginal values corrected ? Default to FALSE. If TRUE, wrongly sampled negative values are set to the minimum positive sampled value}
 
 \item{compute.eec}{currently deprecated. Do not edit default value.}
 
@@ -48,54 +64,39 @@ DataRebuild(H, n, correlation.matrix, moments, x.mode,
 
 \item{tabulate.similar.data}{if TRUE and also checkdata = TRUE it returns the full tabular comparison between the reconstructed and original IPD summaries.}
 
-\item{SI_k}{resampling size of stochastic integration approach. Default
-  to 8000.}
+\item{SI_k}{resampling size of stochastic integration approach. Default to 8000.}
 
-\item{NI_tol}{error tolerance for numerical integration. Default 1e-02,
-  do not decrease too much. As reasonable max value use 1e-05.}
+\item{NI_tol}{error tolerance for numerical integration. Default 1e-02, do not decrease too much. As reasonable max value use 1e-05.}
 
-\item{NI_maxEval}{max number of evaluations during numerical
-  integration. Default 500 (instead 0 implies infinite number of evaluations)..}
+\item{NI_maxEval}{max number of evaluations during numerical integration. Default 500 (instead 0 implies infinite number of evaluations).}
 
 \item{input.sn.corr}{solution of 'correlation.matrix' into standard normal space (the Gaussian copula parameter, see Details). Default is NULL and solution is found internally. If matrix solution is instead given, it overrides internal computations and it is directly used to generate artificial data. This can be useful as a post hoc data generation tuning procedure. See Details.}
 
 \item{cp.finetune}{logical. If NORTA method is used and x.mode = TRUE, it iteratively fine-tunes Kruskal analytic solution (corrtype = rank.corr) of copula parameter, until the correlation bias of the generated artificial data is reduced. It can also be used along with argument 'assume.all.smooth = TRUE' (see below). Default FALSE.}
 
-\item{rescale.smoothed.binary}{if Kruskal analytic conversion was used
-  and x.mode = T, it rescales smoothed binary variables into integer
-  format (typically needed). Default FALSE.}
+\item{rescale.smoothed.binary}{if Kruskal analytic conversion was used and x.mode = T, it rescales smoothed binary variables into integer format (typically needed). Default FALSE.}
 
 \item{assume.all.smooth}{logical. If NORTA method is used, it pretends an input Pearson correlation matrix is already a valid Kruskal solution, which falsely assumes all variables are continuous, when some are actually discrete. This is biased but it can yield quick (fine-tunable -- see 'cp.finetune'). Default FALSE.}
 
+\item{kruskal_init}{boolean. Should Kruskal correlation be used to initialize Newton_Raphson search of correlation in standard Normal space? Note, Kruskal is actually the analytic solution for this search if both variables in pair are continuous. Default FALSE.}
 
+\item{kruskal_use}{boolean. Use analytic Kruskal solution ofr correlation in SN space if both variables in a pair are continuous. #' This avoids running the more expensive Newton-Raphson search for that pair. Default = FALSE.}
+
+\item{kruskal_init_matrix}{matrix. Correlation matrix with mixed entries for continuous-continous pairs (Kruskal analytic solution for SN space) or continuous-binary (Pearson correlation). It will be used to either use kruskal values as init in Newton-Raphson search (kruskal_init) or by-pass it entirely by forwarding the kruskal values to the SN space solution (kruskal_use)}
+
+\item{newtrap_parallel}{boolean. If TRUE executes parallel computation of the Newton-Raphson search.}
 }
 \value{
-An object of class 'similar.data'.
+An object of class 'similar.data'. Default NULL.
 }
 \description{
-`DataRebuild()` generates artificial data, that is stochastic copies of the original IPD, by taking empirical IPD distributional summaries as input data only.}
+`DataRebuild()` generates artificial data, that is stochastic copies of the original IPD, by taking empirical IPD distributional summaries as input data only.
+}
 \details{
-`DataRebuild()` is based on a Gaussian Copula inversion technique also
-known as NORmal To Anything (NORTA) transformation. Inversion occurs
-upon conversion of an input empirical matrix into standard normal space
-(copula parameter solution). If data.rearrange = "norta", conversion
-(optimization) expects a Pearson correlation matrix as input (corrtype =
-"moment.corr" is chosen automatically default). Using "norta" and
-"rank.corr" performs Kruskal analytic conversion (theoretically valid if
-all marginals are continous), whereas "normal.corr" simply returns the
-input matrix as it is. If optimization fails with numerical integration
-(default), try stochastic integration (stochastic.integration = TRUE)
-instead. 
-
+`DataRebuild()` is based on a Gaussian Copula inversion technique also known as NORmal To Anything (NORTA) transformation. Inversion occurs upon conversion of an input empirical matrix into standard normal space (copula parameter solution). If data.rearrange = "norta", conversion (optimization) expects a Pearson correlation matrix as input (corrtype = "moment.corr" is chosen automatically default). Using "norta" and "rank.corr" performs Kruskal analytic conversion (theoretically valid if all marginals are continous), whereas "normal.corr" simply returns the input matrix as it is. If optimization fails with numerical integration (default), try stochastic integration (stochastic.integration = TRUE) instead.
 }
 \section{Note}{
- this program currently assumes that previous to calculation of the
- input IPD summaries every IPD categorical variable with \eqn{m} levels
- was first
- converted to \eqn{m-1} dummy (binary) variables. As an alternative one
- can, in the future, allow for
- categorical marginals as well and use a Multinomial distribution
- modeling. This program relies on archived package 'JohnsonDistribution'.
+  this program currently assumes that previous to calculation of the input IPD summaries every IPD categorical variable with \eqn{m} levels was first converted to \eqn{m-1} dummy (binary) variables. As an alternative one can, in the future, allow for categorical marginals as well and use a Multinomial distribution modeling. This program relies on archived package 'JohnsonDistribution'.
 }
 
 \examples{
@@ -104,11 +105,8 @@ DataRebuild( H = 100, n = 1000 )
 }
 
 help("gcipdr")
-}
-\references{
 
 }
 \seealso{
 [Return.key.IPD.summaries()] for allowed input IPD summary format, [FitJohnsonDistribution()] from archived package JohnsonDistribution, [adaptIntegrate()] from package cubature
 }
- 

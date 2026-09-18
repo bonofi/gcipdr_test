@@ -4,8 +4,13 @@
 \alias{Return.key.IPD.summaries}
 \title{Computation of input IPD summaries from the original IPD}
 \usage{
-Return.key.IPD.summaries(md, corrtype = c("rank.corr", "moment.corr",
-  "normal.corr"), only.fixed.stats = FALSE, na.erase = TRUE)
+Return.key.IPD.summaries(
+  md,
+  corrtype = c("moment.corr", "rank.corr", "normal.corr"),
+  only.fixed.stats = FALSE,
+  na.erase = TRUE,
+  compute.jsp = FALSE
+)
 }
 \description{
 This function computes marginal moments up to fourth degree, all pairwise correlation of an available IPD and Johnson system parameters for all IPD non-binary marginals. The IPD is supposed to be in a specific format (see `Return.IPD.design.matrix()` and Details of `DataRebuild()`).
