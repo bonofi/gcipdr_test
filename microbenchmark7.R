@@ -30,7 +30,7 @@ apply(testdat, 2, sd)
 
 test <- gcipdrtest::Simulate.data.given.IPD(
   testdat, H=5, stochastic.integration = TRUE, 
-  SI_k = 50000, method = 10, # method 10 user-defined marginals 
+  SI_k = 50000, method = 13, # method 13 user-defined marginals 
   checkdata = TRUE,
   tabulate.similar.data = TRUE,
   user_defined_marginals = list(
@@ -47,7 +47,7 @@ Jparms1 <- JohnsonFit(testdat$mpg)
 
 test2 <- gcipdrtest::Simulate.data.given.IPD(
   testdat, H=5, stochastic.integration = TRUE, 
-  SI_k = 50000, method = 10, # method 10 user-defined marginals 
+  SI_k = 50000, method = 13, # method 13 user-defined marginals 
   checkdata = TRUE,
   tabulate.similar.data = TRUE,
   user_defined_marginals = list(
