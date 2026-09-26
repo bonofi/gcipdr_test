@@ -34,10 +34,16 @@ First.attempt.Rx_Rz.conversion <- function(Rx, marginals,
                                            means, sds, stoch=FALSE,
                                            lows=c(-5,-5), ups=c(5,5),
                                            pNorm=NULL, K=1000, NI_tol = 1e-05,
-                                           NI_maxEval = 20)
+                                           NI_maxEval = 20,
+                                           kruskal_init = FALSE, kruskal_use = FALSE,
+                                           kruskal_init_matrix = NULL,
+                                           newtrap_parallel = FALSE)
 {
                                         # Rx : corr matrix of X; marginals list of marginal inverse CDFs (quantile yelders)
-    p <- length(marginals)    
+  if (kruskal_init & !is.null(kruskal_init_matrix))
+    Rx <- kruskal_init_matrix
+  
+  p <- length(marginals)    
 
     if(is.null(pNorm))
         pNorm <-rep(TRUE, p)
@@ -46,12 +52,44 @@ First.attempt.Rx_Rz.conversion <- function(Rx, marginals,
 
     J <- p*(p-1)/2 # number of separate root problems, equals dim(combos)[2]
     
-    Rut <- lapply(1:J, function(j)
+    ####### implement option of using Kruskal solutions only 
+    ####### for continuous-continuous pairs and by-pass Newton-Raphson for those
+    if (kruskal_use & !is.null(kruskal_init_matrix))
+    {
+      what_use <- attributes(kruskal_init_matrix)$is_cont_flag
+      if (is.null(what_use))
+        stop("kruskal_init_matrix must have an attribute 'is_cont_flag' that is 
+             a matrix having same dimension of kruskal_init_matrix and elements = 1 if the pair is continuous-continuous 
+             or 0 if is continuous-binary. Assign this attibute via 'attribute(kruskal_init_matrix)$is_cont_flag <-' ")
+      # indicator for Kruskal solution
+      notjs <- which(what_use[lower.tri(what_use)] == 1)
+      # indicator for Newton-Raphson routine
+      js <- which(what_use[lower.tri(what_use)] == 0)
+      if (length(notjs) < 1)
+        notjs <- NULL
+      if (length(js) < 1)
+        js <- NULL
+      # if notjs is NULL Krx will be void
+      Krx <- lapply(
+        kruskal_init_matrix[lower.tri(kruskal_init_matrix)][notjs],
+        \(x) { 
+          attributes(x)$adjusted <- FALSE
+          return(x)
+          }
+      )
+    } else {
+      # if kruskal_use = F, Newton-Raphson routine runs through all pairs
+      js <- 1:J
+      notjs <- Krx <- NULL
+    } 
+   #############    end kruskal_use block    
+    
+    pair_search <- function(j)
     {
         row <- combos[1, j]
         col <- combos[2, j]
         rxj <- Rx[row, col]
-
+        
         g1 <- marginals[[row]]
         g2 <- marginals[[col]]
 
@@ -128,9 +166,25 @@ First.attempt.Rx_Rz.conversion <- function(Rx, marginals,
             warning("sign of copula pair correlation different from entry value !!!", call.=F)
         out
     }
-    )
     
-   res <- make.square.matrix(unlist( Rut ), p )
+    # ── Sequential vs parallel dispatch ─────────────────────────────
+    # Sequential: plain lapply, byte-for-byte identical to original algorithm
+    # Parallel: future_lapply with seed management for cross-worker reproducibility
+    if (!newtrap_parallel)
+      Rut0 <- lapply(js, pair_search)
+    else
+      Rut0 <- future.apply::future_lapply(
+        js, 
+        pair_search, 
+        future.seed = TRUE)
+    
+    Rut <- vector("list", J)
+    #### reorganize results accounting for kruskal_use option
+    Rut[js] <- Rut0
+    Rut[notjs] <- Krx
+
+    res <- make.square.matrix(unlist( Rut ), p )
+    
     res.bool <- make.square.matrix( unlist(
         lapply(Rut, function(x)
         attr(x, "adjusted", T)
@@ -151,16 +205,25 @@ Rx.to.Rz.conv <- function(Rx, marginals,
                           means, sds,
                           stoch=FALSE, lows=c(-5,-5),
                           ups=c(5,5), pNorm=NULL, K=1000,
-                          NI_tol = 1e-05, NI_maxEval = 20)
+                          NI_tol = 1e-05, NI_maxEval = 20,
+                          kruskal_init = FALSE, kruskal_use = FALSE,
+                          kruskal_init_matrix = NULL,
+                          newtrap_parallel = FALSE)
 {
-    first.try <- First.attempt.Rx_Rz.conversion(Rx,
-                                                marginals,
-                                                means, sds,
-                                                stoch, lows,
-                                                ups, pNorm, K,
-                                                NI_tol, NI_maxEval
-                                                )
-    if ( is.SPD.matrix(first.try$matrix) )
+
+  first.try <- First.attempt.Rx_Rz.conversion(
+    Rx,
+    marginals,
+    means, sds,
+    stoch, lows,
+    ups, pNorm, K,
+    NI_tol, NI_maxEval,
+    kruskal_init,
+    kruskal_use,
+    kruskal_init_matrix,
+    newtrap_parallel
+  )
+  if ( is.SPD.matrix(first.try$matrix) )
         return(first.try$matrix)
     else
         res <- make.matrix.SPD( first.try$matrix, first.try$flag)
@@ -179,20 +242,28 @@ convertRx <- function(Rx, marginals=NULL,
                       means=NULL, sds=NULL, stoch=FALSE, 
                       lows=c(-5,-5), ups=c(5,5),
                       pNorm=NULL, corrtype=c("moment", "rank"),
-                      K=1000, NI_tol = 1e-05, NI_maxEval = 20)
+                      K=1000, NI_tol = 1e-05, NI_maxEval = 20,
+                      kruskal_init = FALSE, kruskal_use = FALSE,
+                      kruskal_init_matrix = NULL,
+                      newtrap_parallel = FALSE)
 {
     corrtype <- match.arg(corrtype)
-
+    
     mc.stoch <- stoch & corrtype=="moment"
     Rz <- switch(corrtype,
-                 moment= Rx.to.Rz.conv(Rx,
-                                       marginals,
-                                       means, sds,
-                                       mc.stoch,
-                                       lows, ups,
-                                       pNorm, K,
-                                       NI_tol, NI_maxEval
-                                       ),                                        # also use mom in case rank need numerical search ...**
+                 moment= Rx.to.Rz.conv(
+                   Rx,
+                   marginals,
+                   means, sds,
+                   mc.stoch,
+                   lows, ups,
+                   pNorm, K,
+                   NI_tol, NI_maxEval,
+                   kruskal_init,
+                   kruskal_use,
+                   kruskal_init_matrix,
+                   newtrap_parallel
+                 ),                                        # also use mom in case rank need numerical search ...**
                  rank= kruskalconv(Rx)
                  )
     Rz
@@ -683,7 +754,7 @@ make.matrix.SPD <- function( mat, flag )
         if ( is.SPD.matrix(mat) )  # TODO(me) : is missing the case where mat is flaged but not flagged elements need also be tweaked ...
             return(mat)
         else
-            res <- make.matrix.SPD.if.NOT.flagged( mat[lower.tri(mat)], p )  # feed lower trinagular only
+            res <- make.matrix.SPD.if.NOT.flagged( mat[lower.tri(mat)], p )  # feed lower triangular only
     }
     return(res)
 }

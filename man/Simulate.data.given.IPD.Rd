@@ -2,7 +2,7 @@
 % Please edit documentation in R/ipd_rec.R
 \name{Simulate.data.given.IPD}
 \alias{Simulate.data.given.IPD}
-\title{IPD reconstruction from IPD summaries directly computed on IPD (DEPRECATED).}
+\title{IPD reconstruction from IPD summaries directly computed on IPD.}
 \usage{
 Simulate.data.given.IPD(
   data,
@@ -20,7 +20,9 @@ Simulate.data.given.IPD(
   NI_tol = 1e-05,
   NI_maxEval = 20,
   input.sn.corr = NULL,
-  user_defined_marginals = NULL
+  kruskal_init = FALSE,
+  kruskal_use = FALSE,
+  newtrap_parallel = FALSE
 )
 }
 \description{

@@ -224,6 +224,10 @@ Return.key.IPD.summaries <- function( md,
         jsp <- NULL
     Rx <- Return.correlation.matrix( md[,-1], corrtype)  #  sample correlation matrix
     rownames(Rx) <- colnames(Rx) <- variable.names # adding names to corr pairs
+    # flags if variables pair in upper Rx are both continuous for 
+    # Kruskal initialization in NORTA search (or NORTA replacement)
+    kruskal_init_mat <- kruskal_init_matrix(md[,-1])
+    
     out <- list(sample.size = n ,
                 is.sample.size.complete = is.data.missing , # if NAs are kept, sample size includes all records (is complete)
                 variable.names = variable.names ,
@@ -231,7 +235,8 @@ Return.key.IPD.summaries <- function( md,
                 correlation.matrix = Rx , # data correlation matrix
                 model.sufficient.statistics = mirs, # model-induced data reduction, X'y term in GLM and Cox models
                 johnson.parameters = jsp , # solution to Johnson system
-                is.binary.variable = x.mode  # boolean (is variable binary or continuous ? )
+                is.binary.variable = x.mode,  # boolean (is variable binary or continuous ? )
+                kruskal_init_matrix = kruskal_init_mat # matrix (mixed correlations for continuous-continuous and continuous-binary pairs)
                 )
     class(out) <- "key.ipd.summary"
     return( out )
@@ -604,7 +609,10 @@ NORTAconvert.correlation.matrix <- function(correlation.matrix , marginal.invers
                                             first.moments, second.moments, stochastic.integration,
                                             yes.normal.percentile,
                                             corr.type=c("rank.corr", "moment.corr", "normal.corr"),
-                                            SI_k = 8000, NI_tol = 1e-05, NI_maxEval = 20)
+                                            SI_k = 8000, NI_tol = 1e-05, NI_maxEval = 20,
+                                            kruskal_init = FALSE, kruskal_use = FALSE, 
+                                            kruskal_init_matrix = NULL,
+                                            newtrap_parallel = FALSE)
 {
     corr.type <- match.arg(corr.type)
     if (corr.type == "normal.corr")
@@ -620,24 +628,31 @@ NORTAconvert.correlation.matrix <- function(correlation.matrix , marginal.invers
             stop("arguments must have same length")
         if (K > 1)
                                         # solves NORTA problem (finds corresponding corr matrix in standard normal space, CAIRO & NELSON 97)
-            correlation.in.standard.normal.space <- switch(corr.type,   # Rz
-                                                           "moment.corr" =
-                                                               {
-                                                                   convertRx(correlation.matrix,
-                                                                             marginal.inverse.distributions,
-                                                                             first.moments, second.moments,
-                                                                             stoch = stochastic.integration,
-                                                                             pNorm = yes.normal.percentile,
-                                                                             K = SI_k,
-                                                                             NI_tol = NI_tol,
-                                                                             NI_maxEval = NI_maxEval
-                                                                             )  # TODO(me): set K as formal argument or tweak here ....
-                                                               },
-                                                           "rank.corr" =  convertRx( correlation.matrix , corrtype="rank")  )
+            correlation.in.standard.normal.space <- switch(
+              corr.type,   # Rz
+              "moment.corr" =
+                {
+                  convertRx(
+                    correlation.matrix,
+                    marginal.inverse.distributions,
+                    first.moments, second.moments,
+                    stoch = stochastic.integration,
+                    pNorm = yes.normal.percentile,
+                    K = SI_k,
+                    NI_tol = NI_tol,
+                    NI_maxEval = NI_maxEval,
+                    kruskal_init = kruskal_init, 
+                    kruskal_use = kruskal_use,
+                    kruskal_init_matrix = kruskal_init_matrix,
+                    newtrap_parallel = newtrap_parallel
+                  )  # TODO(me): set K as formal argument or tweak here ....
+                },
+              "rank.corr" =  convertRx( correlation.matrix , corrtype="rank")  )
         else
-            correlation.in.standard.normal.space <- diag(nrow = K)  # Rz
-        if ( any( eigen(correlation.in.standard.normal.space, T,T)$values < 0 )  )
-            stop("solution to the NORTA problem is not definite semipositive ")
+          correlation.in.standard.normal.space <- diag(nrow = K)  # Rz
+        # CHANGE 13.09.2026 DEACTIVATING SPD check here to introduce single gate in norta.method
+        # if ( any( eigen(correlation.in.standard.normal.space, T,T)$values < 0 )  )
+        #     stop("solution to the NORTA problem is not definite semipositive ")
         return(correlation.in.standard.normal.space)
     }
      
@@ -694,7 +709,9 @@ norta.method <- function( simulation.size, sample.size, correlation.matrix,
                          first.moments, second.moments, stochastic.integration, yes.normal.percentile,
                          marginal.inverse.distributions, variable.names,
                          corr.type=c("rank.corr", "moment.corr", "normal.corr"),
-                         SI_k = 8000, NI_tol = 1e-05, NI_maxEval = 20, input.sn.corr = NULL)
+                         SI_k = 8000, NI_tol = 1e-05, NI_maxEval = 20, input.sn.corr = NULL, 
+                         kruskal_init = FALSE, kruskal_use = FALSE, kruskal_init_matrix = NULL,
+                         newtrap_parallel = FALSE)
 {
     corr.type <- match.arg(corr.type)
     if ( any( eigen(correlation.matrix, T,T)$values < 0 )  )   # empirically observed correlation matrix
@@ -710,16 +727,34 @@ norta.method <- function( simulation.size, sample.size, correlation.matrix,
         if (corr.type == "normal.corr")
             correlation.in.standard.normal.space <- correlation.matrix # already is ...
         else
-            correlation.in.standard.normal.space <- NORTAconvert.correlation.matrix(correlation.matrix,
-                                                                                    marginal.inverse.distributions,
-                                                                                    first.moments, second.moments,
-                                                                                    stochastic.integration,
-                                                                                    yes.normal.percentile,
-                                                                                    corr.type, SI_k, NI_tol, NI_maxEval
-                                                                                    )
+            correlation.in.standard.normal.space <- NORTAconvert.correlation.matrix(
+              correlation.matrix,
+              marginal.inverse.distributions,
+              first.moments, second.moments,
+              stochastic.integration,
+              yes.normal.percentile,
+              corr.type, SI_k, NI_tol, NI_maxEval,
+              kruskal_init, kruskal_use, kruskal_init_matrix,
+              newtrap_parallel
+            )
     }
     else
-        correlation.in.standard.normal.space <- input.sn.corr # adding option to externally tweak copula paramenter
+        correlation.in.standard.normal.space <- input.sn.corr # adding option to externally tweak copula parameter
+    
+    ############ single SPD check 13.09.2026 ######################
+    if ( any( eigen(correlation.in.standard.normal.space, T,T)$values < 0 )  ){
+      # ENFORCE POSITIVE DEFINITENESS (Higham's Alternating Projections Method)
+      # Hybrid matrices frequently yield negative eigenvalues; nearPD fixes this safely
+      correlation.in.standard.normal.space <- as.matrix(
+        Matrix::nearPD(
+          correlation.in.standard.normal.space, 
+          corr = TRUE)$mat
+        )
+      # second check
+      if ( any( eigen(correlation.in.standard.normal.space, T,T)$values < 0 )  )
+        stop("solution to the NORTA problem is not definite semipositive ")
+    }
+    ############ 
                                         #
     rownames(correlation.in.standard.normal.space) <- colnames(correlation.in.standard.normal.space) <- variable.names
     U <- chol(correlation.in.standard.normal.space)  # Cholesky decomposition
@@ -743,6 +778,9 @@ Generate.with.Complete.correlation <- function(H, n, correlation.matrix, moments
                                                marg.model=c("gamma", "johnson", "user_defined"),
                                                SI_k = 8000, NI_tol = 1e-05, NI_maxEval = 20,
                                                input.sn.corr = NULL, rescale.smoothed.binary = FALSE,
+                                               kruskal_init = FALSE, kruskal_use = FALSE, 
+                                               kruskal_init_matrix = NULL,
+                                               newtrap_parallel = FALSE,
                                                user_defined_marginals = NULL)
 {
     corrtype <- match.arg(corrtype)
@@ -779,7 +817,9 @@ Generate.with.Complete.correlation <- function(H, n, correlation.matrix, moments
     res <- norta.method(H, n, correlation.matrix, mx, nortasd,
                         stochastic.integration, norm.perc,
                         marginals, variable.names,
-                        corrtype, SI_k, NI_tol, NI_maxEval, input.sn.corr
+                        corrtype, SI_k, NI_tol, NI_maxEval, input.sn.corr,
+                        kruskal_init, kruskal_use, kruskal_init_matrix,
+                        newtrap_parallel
                         )
     if ( ( corrtype == "rank.corr" & any(x.mode) & rescale.smoothed.binary ) ) # convert smoothed binary to integer bits
         res$copula.inverse <- lapply(res$copula.inverse, function(x)
@@ -838,8 +878,12 @@ Generate.with.Complete.correlation <- function(H, n, correlation.matrix, moments
 #'@param rescale.smoothed.binary if Kruskal analytic conversion was used and x.mode = T, it rescales smoothed binary variables into integer format (typically needed). Default FALSE.
 #'
 #'@param assume.all.smooth logical. If NORTA method is used, it pretends an input Pearson correlation matrix is already a valid Kruskal solution, which falsely assumes all variables are continuous, when some are actually discrete. This is biased but it can yield quick (fine-tunable -- see 'cp.finetune'). Default FALSE.
+#' @param kruskal_init boolean. Should Kruskal correlation be used to initialize Newton_Raphson search of correlation in standard Normal space? Note, Kruskal is actually the analytic solution for this search if both variables in pair are continuous. Default FALSE.
+#' @param kruskal_use boolean. Use analytic Kruskal solution ofr correlation in SN space if both variables in a pair are continuous. #' This avoids running the more expensive Newton-Raphson search for that pair. Default = FALSE.
+#' @param kruskal_init_matrix matrix. Correlation matrix with mixed entries for continuous-continous pairs (Kruskal analytic solution for SN space) or continuous-binary (Pearson correlation). It will be used to either use kruskal values as init in Newton-Raphson search (kruskal_init) or by-pass it entirely by forwarding the kruskal values to the SN space solution (kruskal_use) 
+#' @param newtrap_parallel boolean. If TRUE executes parallel computation of the Newton-Raphson search.
 #'@param user_defined_marginals list. List of user-defined quantile functions, if marg.model = 'user_defined'. Each element specifies the inverse distribution of the corresponding IPD marginal in exactly the same order as specified in the correlation-matrix or in the moments array. It overrides 'x.mode'.
-#'  
+
 #' @return An object of class 'similar.data'.
 #'
 #' @details `DataRebuild()` is based on a Gaussian Copula inversion technique also known as NORmal To Anything (NORTA) transformation. Inversion occurs upon conversion of an input empirical matrix into standard normal space (copula parameter solution). If data.rearrange = "norta", conversion (optimization) expects a Pearson correlation matrix as input (corrtype = "moment.corr" is chosen automatically default). Using "norta" and "rank.corr" performs Kruskal analytic conversion (theoretically valid if all marginals are continous), whereas "normal.corr" simply returns the input matrix as it is. If optimization fails with numerical integration (default), try stochastic integration (stochastic.integration = TRUE) instead. 
@@ -869,7 +913,11 @@ DataRebuild <- function(H, n, correlation.matrix, moments, x.mode,
                         SBjohn.correction = FALSE, compute.eec = FALSE, checkdata = FALSE,
                         tabulate.similar.data =  FALSE, SI_k = 8000, NI_tol = 1e-02, NI_maxEval = 500,
                         input.sn.corr = NULL, cp.finetune = FALSE,
-                        rescale.smoothed.binary = FALSE, assume.all.smooth = FALSE, 
+                        rescale.smoothed.binary = FALSE, assume.all.smooth = FALSE,
+                        kruskal_init = FALSE,
+                        kruskal_use = FALSE,
+                        kruskal_init_matrix = NULL,
+                        newtrap_parallel = FALSE,
                         user_defined_marginals = NULL)
 {
     data.rearrange <- match.arg(data.rearrange)
@@ -910,6 +958,8 @@ DataRebuild <- function(H, n, correlation.matrix, moments, x.mode,
                                                               x.mode, variable.names, SBjohn.correction,
                                                               corrtype, marg.model, SI_k, NI_tol, NI_maxEval,
                                                               input.sn.corr, rescale.smoothed.binary,
+                                                              kruskal_init, kruskal_use, kruskal_init_matrix,
+                                                              newtrap_parallel,
                                                               user_defined_marginals
                                                               )
                     )
@@ -1140,7 +1190,11 @@ Simulate.data.given.IPD <- function(data, H = NULL, method, fill.missing = FALSE
                                     checkdata = FALSE, compute.eec = FALSE,
                                     tabulate.similar.data =  FALSE, print.message = TRUE,
                                     set.corr.matr2null = FALSE, SI_k = 8000, NI_tol = 1e-05,
-                                    NI_maxEval = 20, input.sn.corr = NULL, user_defined_marginals = NULL)
+                                    NI_maxEval = 20, input.sn.corr = NULL,
+                                    kruskal_init = FALSE,
+                                    kruskal_use = FALSE,
+                                    user_defined_marginals = NULL,
+                                    newtrap_parallel = FALSE )
 {
     method.settings.combo <-  setting.comb.matrix()  # see below ..
     data.rearrange <- method.settings.combo[1 ,method]
@@ -1155,6 +1209,7 @@ Simulate.data.given.IPD <- function(data, H = NULL, method, fill.missing = FALSE
     jsp <- key.summaries$johnson.parameters
     x.mode <- key.summaries$is.binary.variable
     variable.names <- key.summaries$variable.names
+    kruskal_init_mat <- key.summaries$kruskal_init_matrix
     if (is.null(H))
         H <- ifelse( n < 500, 300, 100)
     if (set.corr.matr2null)
@@ -1166,7 +1221,12 @@ Simulate.data.given.IPD <- function(data, H = NULL, method, fill.missing = FALSE
                                    compute.eec, checkdata, tabulate.similar.data,
                                    SI_k = SI_k, NI_tol = NI_tol, NI_maxEval = NI_maxEval,
                                    input.sn.corr = input.sn.corr,
+                                   kruskal_init = kruskal_init,
+                                   kruskal_use = kruskal_use,
+                                   kruskal_init_matrix = kruskal_init_mat,
+                                   newtrap_parallel = newtrap_parallel,
                                    user_defined_marginals = user_defined_marginals
+
                                    )
     similar.data.space <- data.simulation$Xspace
     is.data.statistically.similar <- data.simulation$is.similar  # can be NA is checkdata = FALSE
@@ -1294,14 +1354,18 @@ setting.comb.matrix <- function()
         c( "incomplete", "johnson", "moment.corr" ),
         c( "norta", "gamma", "rank.corr" ),
         c( "norta", "johnson", "rank.corr" ),
+        c("norta", "gamma", "normal.corr"),
+        c("norta", "johnson", "normal.corr"),
+        c("norta", "user_defined", "normal.corr"),
         ### ADDING USER DEFINED MARGINALS OPTION: METHOD 10 = NORTA Pearson-corr user-defined marginals
         c( "incomplete", "user_defined", "rank.corr" ),
         c( "norta", "user_defined", "moment.corr" ),
         c( "incomplete", "user_defined", "moment.corr" ),
         c( "norta", "user_defined", "rank.corr" )
+
         ),
         nrow = 3
-        )   # eight combination for data simulation: create varaible 'simulation type: approach.1, approach.2, ...' DONE in bias.looped
+        )   # xx combinations for data simulation: create varaible 'simulation type: approach.1, approach.2, ...' DONE in bias.looped
 
 Print.simul.settings <- function(settings, N, H,
                                  stoch, null.corr, silent = FALSE )

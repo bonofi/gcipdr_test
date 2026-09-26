@@ -140,7 +140,6 @@ List findzerocorr(const arma::vec& xell,
  
   arma::uword i = 0;  // instead of int i = 0;
 
-
   check = 1;  // intial check value
 
   while( absv(check) > test ){
