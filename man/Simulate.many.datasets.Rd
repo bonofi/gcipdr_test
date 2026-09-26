@@ -2,7 +2,7 @@
 % Please edit documentation in R/ipd_rec.R
 \name{Simulate.many.datasets}
 \alias{Simulate.many.datasets}
-\title{Reconstruction of several (unrelated) available IPDs.}
+\title{Reconstruction of several (unrelated) available IPDs (DEPRECATED).}
 \usage{
 Simulate.many.datasets(
   datalist,

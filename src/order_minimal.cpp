@@ -122,10 +122,7 @@ XPtr<funcpointer> adressmyfuncs(std::string flabel){
 
 // zero finder in Rüschendorf function
 
-
 // [[Rcpp::export]]
-
-
 List findzerocorr(const arma::vec& xell, 
                   const arma::vec& x, 
                   const double test, 

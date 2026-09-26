@@ -1,4 +1,4 @@
-Package: gcipdrtest
+Package: gcipdr
 Type: Package
 Title: Gaussian Copula (based) Individual Person Data (IPD) Reconstruction
 Version: 0.0  

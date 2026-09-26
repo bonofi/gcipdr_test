@@ -1,0 +1,60 @@
+#include <Rcpp.h>
+
+// [[Rcpp::export]]
+Rcpp::List newtrap_one_cpp(Rcpp::Function fdist, Rcpp::Function fprime,
+                           double start, double tol = 0.01, int maxit = 50)
+{
+  double x = start;
+  
+  // Initial evaluation
+  SEXP out_sexp = fdist(x);
+  double out = Rcpp::as<double>(out_sexp);
+  
+  bool adjusted = false;
+  int i = 0;
+  
+  while (out > tol || out < -tol)  // Avoid fabs — use explicit comparison
+  {
+    SEXP den_sexp = fprime(x);
+    double den = Rcpp::as<double>(den_sexp);
+    
+    // Safeguard: escape bottleneck if step is degenerate
+    double ratio = out / den;
+    if (ratio > 1e5 || ratio < -1e5)
+    {
+      x = x - 2.0 * out;
+      i = i + 1;
+      if (i > maxit)
+      {
+        Rcpp::warning("Search could not escape bottleneck: procedure has failed");
+        break;
+      }
+      out_sexp = fdist(x);
+      out = Rcpp::as<double>(out_sexp);
+      continue;
+    }
+    
+    // Newton-Raphson update
+    x = x - (out / den);
+    
+    // Re-evaluate objective at new x
+    out_sexp = fdist(x);
+    out = Rcpp::as<double>(out_sexp);
+    i = i + 1;
+    
+    if (i > maxit)
+    {
+      Rcpp::warning("no zero found after max iteration");
+      break;
+    }
+  }
+  
+  Rcpp::NumericVector value(1);
+  value[0] = x;
+  value.attr("adjusted") = adjusted;
+  
+  return Rcpp::List::create(
+    Rcpp::Named("value") = value,
+    Rcpp::Named("iter")  = i
+  );
+}
