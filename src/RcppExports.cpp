@@ -11,11 +11,6 @@ Rcpp::Rostream<true>&  Rcpp::Rcout = Rcpp::Rcpp_cout_get();
 Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
 #endif
 
-#ifdef RCPP_USE_GLOBAL_ROSTREAM
-Rcpp::Rostream<true>&  Rcpp::Rcout = Rcpp::Rcpp_cout_get();
-Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
-#endif
-
 // mccovx1x2_cpp
 double mccovx1x2_cpp(double rz, Rcpp::Function Gx1, Rcpp::Function Gx2, double rx, arma::vec meanx, arma::vec sdx, bool pNorm_1, bool pNorm_2, int K);
 RcppExport SEXP _gcipdrtest_mccovx1x2_cpp(SEXP rzSEXP, SEXP Gx1SEXP, SEXP Gx2SEXP, SEXP rxSEXP, SEXP meanxSEXP, SEXP sdxSEXP, SEXP pNorm_1SEXP, SEXP pNorm_2SEXP, SEXP KSEXP) {

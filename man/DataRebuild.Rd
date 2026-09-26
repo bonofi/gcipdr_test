@@ -14,7 +14,7 @@ DataRebuild(
   stochastic.integration = FALSE,
   data.rearrange = c("norta", "incomplete"),
   corrtype = c("moment.corr", "rank.corr", "normal.corr"),
-  marg.model = c("gamma", "johnson"),
+  marg.model = c("gamma", "johnson", "user_defined"),
   variable.names = NULL,
   SBjohn.correction = FALSE,
   compute.eec = FALSE,
@@ -30,17 +30,18 @@ DataRebuild(
   kruskal_init = FALSE,
   kruskal_use = FALSE,
   kruskal_init_matrix = NULL,
-  newtrap_parallel = FALSE
+  newtrap_parallel = FALSE,
+  user_defined_marginals = NULL
 )
 }
 \arguments{
-\item{H}{integer number of independent IPD replicates to be generated.}
+\item{H}{integer number of independent pseudodata replications to be generated.}
 
-\item{n}{integer number of independent IPD records. Ex: number of rows (subjects) in original IPD.}
+\item{n}{integer number of independent IPD observations.}
 
-\item{correlation.matrix}{pairwise IPD correlation matrix.}
+\item{correlation.matrix}{pairwise IPD correlation matrix. See 'Return.key.IPD.summaries'.}
 
-\item{moments}{numeric array of IPD marginal moments up to fourth degree for all IPD variables (columns).}
+\item{moments}{numeric array of IPD marginal moments. See 'Return.key.IPD.summaries'.}
 
 \item{x.mode}{logical vector: is IPD marginal variable binary (TRUE) or not ?}
 
@@ -52,7 +53,7 @@ DataRebuild(
 
 \item{corrtype}{what type of IPD correlation matrix are you feeding in ? Spearman (rank.corr), Pearson (moment.corr), or Waerden (normal.corr). see Deatails.}
 
-\item{marg.model}{either "gamma" or "johnson" for modeling of non-binary IPD marginal. All binary marginals are modeled via a Bernoulli distribution, or a Beta distribution if Kruskal analytic conversion is used (see below).}
+\item{marg.model}{either "gamma", "johnson" (continuous marginals) or "user_defined". If not user defined, all binary marginals are modeled via a Bernoulli distribution or a Beta distribution if Kruskal analytic conversion is used (see below).}
 
 \item{variable.names}{names of IPD marginal variables. If NULL (Default) automatic labels are generated.}
 
@@ -85,9 +86,11 @@ DataRebuild(
 \item{kruskal_init_matrix}{matrix. Correlation matrix with mixed entries for continuous-continous pairs (Kruskal analytic solution for SN space) or continuous-binary (Pearson correlation). It will be used to either use kruskal values as init in Newton-Raphson search (kruskal_init) or by-pass it entirely by forwarding the kruskal values to the SN space solution (kruskal_use)}
 
 \item{newtrap_parallel}{boolean. If TRUE executes parallel computation of the Newton-Raphson search.}
+
+\item{user_defined_marginals}{list. List of user-defined quantile functions, if marg.model = 'user_defined'. Each element specifies the inverse distribution of the corresponding IPD marginal in exactly the same order as specified in the correlation-matrix or in the moments array. It overrides 'x.mode'.}
 }
 \value{
-An object of class 'similar.data'. Default NULL.
+An object of class 'similar.data'.
 }
 \description{
 `DataRebuild()` generates artificial data, that is stochastic copies of the original IPD, by taking empirical IPD distributional summaries as input data only.
