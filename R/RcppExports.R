@@ -22,6 +22,6 @@ newtrap_one_cpp <- function(fdist, fprime, safecheck_arg, start, tol = 0.01, max
 }
 
 findzerocorr <- function(xell, x, test, rf_type) {
-    .Call('_gcipdrtest_findzerocorr', PACKAGE = 'gcipdrtest', xell, x, test, rf_type)
+    .Call('_gcipdr_findzerocorr', PACKAGE = 'gcipdr', xell, x, test, rf_type)
 }
 
