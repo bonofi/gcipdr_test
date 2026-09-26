@@ -189,7 +189,7 @@ print(res)
 boxplot(res, names = c("gcipdr", "gcipdrtest"))
 
 
-### ASEESS DOMINANCE OG GX1 GX2
+### ASSESS DOMINANCE OF GX1 GX2
 
 # Test: how much time is spent in Gx1/Gx2 callbacks vs rest?
 K <- 50000
