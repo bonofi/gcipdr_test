@@ -1,4 +1,4 @@
-useDynLib(gcipdr)
+useDynLib(gcipdrtest)
 importFrom(Rcpp, evalCpp)
 exportPattern("^[[:alpha:]]+")
 
