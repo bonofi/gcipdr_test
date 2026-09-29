@@ -12,7 +12,6 @@ library(tidyverse)
 library(microbenchmark)
 library(remotes)
 library(SuppDists)
-SuppDists::moments(testdat$mpg)
 
 pak::pak("bonorico/gcipdr")
 pak::pak("bonofi/gcipdr_test@optimization_kruskal_inits")
@@ -27,6 +26,8 @@ library(gcipdrtest)
 testdat <- mtcars[, 1:2]
 apply(testdat, 2, mean)
 apply(testdat, 2, sd)
+SuppDists::moments(testdat$mpg)
+
 
 test <- gcipdrtest::Simulate.data.given.IPD(
   testdat, H=5, stochastic.integration = TRUE, 
