@@ -14,7 +14,6 @@ library(remotes)
 library(SuppDists)
 
 pak::pak("bonorico/gcipdr")
-pak::pak("bonofi/gcipdr_test@optimization_kruskal_inits")
 
 library(gcipdr)
 library(gcipdrtest)

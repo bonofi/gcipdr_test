@@ -118,7 +118,6 @@ Sys.which("gcc")
 Rcpp::compileAttributes()
 devtools::load_all()
 
-install_github("bonofi/gcipdr_test", ref="optimization_Rccp3")
 
 library(gcipdr)
 library(gcipdrtest)
