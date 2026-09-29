@@ -206,8 +206,7 @@ boxplot(res, names = c("gcipdr", "gcipdrtest"))
 ### PARALLEL TESTING
 
 # Test 1: Verify parallel reproducibility (same seed, same result across runs)
-library(future)
-library(future.apply)
+
 
 # Set parallel backend
 future::plan(multisession, workers = 4)
