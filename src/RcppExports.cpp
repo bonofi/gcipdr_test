@@ -13,7 +13,7 @@ Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
 
 // mccovx1x2_cpp
 double mccovx1x2_cpp(double rz, Rcpp::Function Gx1, Rcpp::Function Gx2, double rx, arma::vec meanx, arma::vec sdx, bool pNorm_1, bool pNorm_2, int K);
-RcppExport SEXP _gcipdrtest_mccovx1x2_cpp(SEXP rzSEXP, SEXP Gx1SEXP, SEXP Gx2SEXP, SEXP rxSEXP, SEXP meanxSEXP, SEXP sdxSEXP, SEXP pNorm_1SEXP, SEXP pNorm_2SEXP, SEXP KSEXP) {
+RcppExport SEXP _gcipdr_mccovx1x2_cpp(SEXP rzSEXP, SEXP Gx1SEXP, SEXP Gx2SEXP, SEXP rxSEXP, SEXP meanxSEXP, SEXP sdxSEXP, SEXP pNorm_1SEXP, SEXP pNorm_2SEXP, SEXP KSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -32,7 +32,7 @@ END_RCPP
 }
 // mccovx1x2prime_cpp
 double mccovx1x2prime_cpp(double rz, Rcpp::Function Gx1, Rcpp::Function Gx2, arma::vec sdx, bool pNorm_1, bool pNorm_2, int K);
-RcppExport SEXP _gcipdrtest_mccovx1x2prime_cpp(SEXP rzSEXP, SEXP Gx1SEXP, SEXP Gx2SEXP, SEXP sdxSEXP, SEXP pNorm_1SEXP, SEXP pNorm_2SEXP, SEXP KSEXP) {
+RcppExport SEXP _gcipdr_mccovx1x2prime_cpp(SEXP rzSEXP, SEXP Gx1SEXP, SEXP Gx2SEXP, SEXP sdxSEXP, SEXP pNorm_1SEXP, SEXP pNorm_2SEXP, SEXP KSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -49,7 +49,7 @@ END_RCPP
 }
 // test_rmvnorm_cpp_cholesky
 arma::mat test_rmvnorm_cpp_cholesky(int K, double rz);
-RcppExport SEXP _gcipdrtest_test_rmvnorm_cpp_cholesky(SEXP KSEXP, SEXP rzSEXP) {
+RcppExport SEXP _gcipdr_test_rmvnorm_cpp_cholesky(SEXP KSEXP, SEXP rzSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -61,7 +61,7 @@ END_RCPP
 }
 // test_rmvnorm_cpp_eigen
 arma::mat test_rmvnorm_cpp_eigen(int K, double rz);
-RcppExport SEXP _gcipdrtest_test_rmvnorm_cpp_eigen(SEXP KSEXP, SEXP rzSEXP) {
+RcppExport SEXP _gcipdr_test_rmvnorm_cpp_eigen(SEXP KSEXP, SEXP rzSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -73,7 +73,7 @@ END_RCPP
 }
 // newtrap_one_cpp
 Rcpp::List newtrap_one_cpp(Rcpp::Function fdist, Rcpp::Function fprime, Rcpp::Nullable<Rcpp::Function> safecheck_arg, double start, double tol, int maxit);
-RcppExport SEXP _gcipdrtest_newtrap_one_cpp(SEXP fdistSEXP, SEXP fprimeSEXP, SEXP safecheck_argSEXP, SEXP startSEXP, SEXP tolSEXP, SEXP maxitSEXP) {
+RcppExport SEXP _gcipdr_newtrap_one_cpp(SEXP fdistSEXP, SEXP fprimeSEXP, SEXP safecheck_argSEXP, SEXP startSEXP, SEXP tolSEXP, SEXP maxitSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -89,7 +89,7 @@ END_RCPP
 }
 // findzerocorr
 List findzerocorr(const arma::vec& xell, const arma::vec& x, const double test, const std::string rf_type);
-RcppExport SEXP _gcipdrtest_findzerocorr(SEXP xellSEXP, SEXP xSEXP, SEXP testSEXP, SEXP rf_typeSEXP) {
+RcppExport SEXP _gcipdr_findzerocorr(SEXP xellSEXP, SEXP xSEXP, SEXP testSEXP, SEXP rf_typeSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -103,16 +103,16 @@ END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
-    {"_gcipdrtest_mccovx1x2_cpp", (DL_FUNC) &_gcipdrtest_mccovx1x2_cpp, 9},
-    {"_gcipdrtest_mccovx1x2prime_cpp", (DL_FUNC) &_gcipdrtest_mccovx1x2prime_cpp, 7},
-    {"_gcipdrtest_test_rmvnorm_cpp_cholesky", (DL_FUNC) &_gcipdrtest_test_rmvnorm_cpp_cholesky, 2},
-    {"_gcipdrtest_test_rmvnorm_cpp_eigen", (DL_FUNC) &_gcipdrtest_test_rmvnorm_cpp_eigen, 2},
-    {"_gcipdrtest_newtrap_one_cpp", (DL_FUNC) &_gcipdrtest_newtrap_one_cpp, 6},
-    {"_gcipdrtest_findzerocorr", (DL_FUNC) &_gcipdrtest_findzerocorr, 4},
+    {"_gcipdr_mccovx1x2_cpp", (DL_FUNC) &_gcipdr_mccovx1x2_cpp, 9},
+    {"_gcipdr_mccovx1x2prime_cpp", (DL_FUNC) &_gcipdr_mccovx1x2prime_cpp, 7},
+    {"_gcipdr_test_rmvnorm_cpp_cholesky", (DL_FUNC) &_gcipdr_test_rmvnorm_cpp_cholesky, 2},
+    {"_gcipdr_test_rmvnorm_cpp_eigen", (DL_FUNC) &_gcipdr_test_rmvnorm_cpp_eigen, 2},
+    {"_gcipdr_newtrap_one_cpp", (DL_FUNC) &_gcipdr_newtrap_one_cpp, 6},
+    {"_gcipdr_findzerocorr", (DL_FUNC) &_gcipdr_findzerocorr, 4},
     {NULL, NULL, 0}
 };
 
-RcppExport void R_init_gcipdrtest(DllInfo *dll) {
+RcppExport void R_init_gcipdr(DllInfo *dll) {
     R_registerRoutines(dll, NULL, CallEntries, NULL, NULL);
     R_useDynamicSymbols(dll, FALSE);
 }
